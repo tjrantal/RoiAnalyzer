@@ -95,28 +95,31 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 		
 		/**Get the current ROI*/
 		Roi ijROI = imp.getRoi();
-		byte[] roiSieve = new byte[width*height];	/*Automatically initialized to zero*/
+		byte[] roiMask = new byte[width*height];	/*Automatically initialized to zero*/
 		int roiPixels = 0;
 		if (ijROI != null){ /*Set pixels outside the manually selected ROI to zero*/
 			/*Check whether pixel is within ROI, mark with bone threshold*/
 			for (int j = 0;j< height;j++){
 				for (int i = 0; i < width;i++){
 					if (ijROI.contains(i,j)){
-						roiSieve[i+j*width] =1;	/*In ROI = 1, out = 0*/
+						roiMask[i+j*width] =1;	/*In ROI = 1, out = 0*/
 						++roiPixels;
 					}
 				}
 			}
 			/*Check whether a polygon can be acquired and include polygon points too if they aren't included already*/
+			/* ImageJ does not include the polygon
 			Polygon polygon = ijROI.getPolygon();
 			if (polygon != null){
 				for (int j = 0;j< polygon.npoints;j++){
-					if (roiSieve[polygon.xpoints[j]+polygon.ypoints[j]*width] != 1){
-						roiSieve[polygon.xpoints[j]+polygon.ypoints[j]*width] = 1;
+					if (roiMask[polygon.xpoints[j]+polygon.ypoints[j]*width] != 1){
+						roiMask[polygon.xpoints[j]+polygon.ypoints[j]*width] = 1;
 						++roiPixels;
 					}
 				}
 			}
+			*/
+			
 		}
 		
 		/*Do polynomial fit on the pixels*/
@@ -126,7 +129,7 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 		roiPixels = 0;
 		for (int j = 0;j< height;j++){
 			for (int i = 0; i < width;i++){
-				if (roiSieve[i+j*width] == 1){
+				if (roiMask[i+j*width] == 1){
 					fitArray[roiPixels][0] = i;	//x-coordinate
 					fitArray[roiPixels][1] = j;	//y-coordinate
 					roiCentre[0]+=(double) i;
