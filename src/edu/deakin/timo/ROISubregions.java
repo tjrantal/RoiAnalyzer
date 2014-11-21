@@ -25,53 +25,17 @@ import edu.deakin.timo.utils.Utils;
  Result is displayed as a binary image. Works with 3D images stack.
  */
 
-public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListener, KeyListener {
-	ScrollbarWithLabel stackScrollbar;
+public class ROISubregions implements PlugIn {
+	
 	ImageWindow imw;
+	//ImageWindow visualizationStackWindow;
 	ImageCanvas canvas;
 	RoiManager rMan;
 	ImagePlus imp;
 	int currentSlice = -1;
 	int depth = -1;
-	long initTime;
-	Overlay[] olay;
-	
-	/**Implement KeyListener*/
-	public void 	keyPressed(KeyEvent e){	/**<Invoked when a key has been pressed.*/
-		/**Shut down the plug-in*/
-		if (e.getExtendedKeyCode() == KeyEvent.getExtendedKeyCodeForChar(KeyEvent.VK_Q) || e.getKeyChar() == 'q'){
-			/**Remove listeners*/
-			
-			stackScrollbar.addAdjustmentListener(this);
-			imw.addMouseWheelListener(this);
-			canvas.removeKeyListener(this);
-		}
-	}
-	public void 	keyReleased(KeyEvent e){}	/**Invoked when a key has been released.*/	
-	public void 	keyTyped(KeyEvent e){}		/**Invoked when a key has been typed.*/
-	
-	/**Implement AdjustmentListener*/
-	public void adjustmentValueChanged(AdjustmentEvent e){
-		if (currentSlice != e.getValue()){
-			currentSlice = e.getValue();
-			setOlay();
-		}
-		
-	}
-	
-	/**Implement MouseWheelListener*/
-	public void mouseWheelMoved(MouseWheelEvent e){
-		int rotation = e.getWheelRotation();
-		if (currentSlice+rotation >0 && currentSlice+rotation <=depth && currentSlice != currentSlice+rotation){
-			currentSlice+= rotation;
-			setOlay();
-		}
-	}
-	
-	private void setOlay(){
-		
-		imp.setOverlay(olay[currentSlice-1]);
-	}
+
+
 	
 	/**Implement the PlugIn interface*/
     public void run(String arg) {
@@ -92,6 +56,55 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 		/*Get image size and stack depth*/
 		int width = imp.getWidth();
 		int height = imp.getHeight();
+		depth = imp.getStackSize();
+		int currentSlice = imp.getSlice();
+		IJ.log("stack depth "+depth+" current slice "+currentSlice);
+		/**Duplicate the image stack to be used for visualization*/
+		String stackName = imp.getTitle();
+		String visualName = stackName+" visualization";
+		Window vsw = WindowManager.getWindow(visualName);
+		
+		ImagePlus visualIP;
+		if (vsw == null){
+			IJ.log("Didn't find visual stack");
+			/*Create a visualization stack, duplicate the original stack*/
+			
+			ImageStack visualizationStack = new ImageStack(width,height);
+			IJ.log("Stack created");
+			for (int i = 1;i<=depth;++i){
+				imp.setSlice(i);
+				IJ.log("Slice changed");
+				short[] slicePixels = Arrays.copyOf((short[]) imp.getProcessor().getPixels(),((short[])imp.getProcessor().getPixels()).length);
+				IJ.log("Copied pixels "+slicePixels.length);
+				//visualizationStack.addSlice(imp.duplicate().getProcessor());
+				visualizationStack.addSlice(null,slicePixels);
+				IJ.log("Added slice "+i);
+			}
+			IJ.log("Set imp to currentSlice");
+			imp.setSlice(currentSlice);
+			
+			//visualizationStack =imp.getImageStack().duplicate();
+			IJ.log("Duplicated stack");
+			//visualIP = imp.duplicate(); //new ImagePlus(visualName,visualizationStack);
+			visualIP = new ImagePlus(visualName,visualizationStack);
+			//visualIP.setTitle(visualName);
+			IJ.log("Got imagePlus for vstack");
+			new ImageConverter(visualIP).convertToRGB();	//Convert the stack to RGB for visualization
+			IJ.log("Converted to RGB");			
+		}else{
+			IJ.log("Found visual stack");
+			WindowManager.setWindow(vsw);
+			if (vsw instanceof ImageWindow){
+				IJ.log("visual stack instanceof ImageWindow");
+				WindowManager.setCurrentWindow((ImageWindow) vsw);
+			}
+			
+			//WindowManager.setCurrentWindow(WindowManager.getActiveWindow());
+			visualIP =   WindowManager.getCurrentImage();
+			//visualizationStack = visualIP.getImageStack();
+			
+		}
+		visualIP.setSlice(currentSlice);
 		
 		/**Get the current ROI*/
 		Roi ijROI = imp.getRoi();
@@ -101,11 +114,9 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 		byte[] roiMask = new byte[width*height];	/*Automatically initialized to zero*/
 		int roiPixels = 0;
 		
-		
-		/*Test ip.getRoi(), and ip.getMask()*/
-		
+		/*Create ROI mask*/
 		if (imp.getMask() != null){
-			/*irregular roi, use Roi and rectangle*/
+			/*irregular roi, use Roi and bounding rectangle*/
 			byte[] tempMask = (byte[]) imp.getMask().getPixels();	/*Out of mask = 0*/
 			for (int j = rect.y;j< rect.y+rect.height;++j){
 				for (int i = rect.x; i < rect.x+rect.width;++i){
@@ -181,14 +192,16 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 		}
 		
 		/**Color the subregions to visualize the division*/
+		/*
 		short[] tempPointer = Arrays.copyOf((short[]) imp.getProcessor().getPixels(),((short[])imp.getProcessor().getPixels()).length);
 		ImagePlus tempImage = new ImagePlus("Subregion results");
 		tempImage.setProcessor(new ShortProcessor(width,height,tempPointer,imp.getProcessor().getCurrentColorModel()));
 		new ImageConverter(tempImage).convertToRGB();
+		*/
 		int[] rgb = new int[3];
 		int value;
 		for (int i = 0; i < fitArray.length;++i) {
-			value = tempImage.getProcessor().getPixel((int)fitArray[i][0],(int)fitArray[i][1]);
+			value = visualIP.getProcessor().getPixel((int)fitArray[i][0],(int)fitArray[i][1]);
 			for (int c = 0; c<3;++c){
 				rgb[c] = (value >>(c*8))& 0XFF;
 			}
@@ -212,11 +225,12 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 					rgb[2] = 0;
 					break;
 			}
-			tempImage.getProcessor().setColor(new Color(rgb[2],rgb[1],rgb[0]));
-			tempImage.getProcessor().drawPixel((int)fitArray[i][0],(int)fitArray[i][1]);
+			visualIP.getProcessor().setColor(new Color(rgb[2],rgb[1],rgb[0]));
+			visualIP.getProcessor().drawPixel((int)fitArray[i][0],(int)fitArray[i][1]);
 		}
-		tempImage.show();
-		
+		visualIP.show();
+		visualIP.repaintWindow();
+
 		/*Calculate results, and spit them out to log*/
 		Calibration calib = imp.getCalibration();
 		double heightScale = calib.pixelHeight;
@@ -257,7 +271,7 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 			pixelInts[i] = new ArrayList<Double>();
 		}
 		
-		
+		short[] tempPointer = Arrays.copyOf((short[]) imp.getProcessor().getPixels(),((short[])imp.getProcessor().getPixels()).length);
 		for (int i = 0; i < fitArray.length;++i) {
 			double pixelIntensity = tempPointer[(int)fitArray[i][0]+(int)fitArray[i][1]*width];
 			pixelInts[0].add(pixelIntensity);
@@ -271,20 +285,6 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 			}
 			intRes[i]/=(double)pixelInts[i].size();
 		}
-		
-		
-		
-		
-		
-		/*
-		Roi tRoi = new Roi(rect);
-		Overlay olay = new Overlay();
-		olay.add(new Roi(imp.getProcessor().getRoi()));
-		tempImage.setOverlay(olay);
-		*/
-		
-		
-		//tempImage.show();
 				
 		/**Create (if it doesn't yet exist) a results panel*/
 		TextPanel textPanel = IJ.getTextPanel();
@@ -316,8 +316,9 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 		
 		
 
-		
-		
+				
+		/*Re-activate the original stack*/
+		WindowManager.setCurrentWindow(imw); 
 		
 		/*Visualize the polynomial fit*/
 		/*
