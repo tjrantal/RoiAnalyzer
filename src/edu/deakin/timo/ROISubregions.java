@@ -95,33 +95,36 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 		
 		/**Get the current ROI*/
 		Roi ijROI = imp.getRoi();
+		Rectangle rect = ijROI.getBoundingRect();//imp.getProcessor().getRoi();
+		
+		/*Determine mask for ROI-specific calculations, set mask to 1, if it belongs to the ROI, 0 otherwise*/
 		byte[] roiMask = new byte[width*height];	/*Automatically initialized to zero*/
 		int roiPixels = 0;
-		if (ijROI != null){ /*Set pixels outside the manually selected ROI to zero*/
-			/*Check whether pixel is within ROI, mark with bone threshold*/
-			for (int j = 0;j< height;j++){
-				for (int i = 0; i < width;i++){
-					if (ijROI.contains(i,j)){
+		
+		
+		/*Test ip.getRoi(), and ip.getMask()*/
+		
+		if (imp.getMask() != null){
+			/*irregular roi, use Roi and rectangle*/
+			byte[] tempMask = (byte[]) imp.getMask().getPixels();	/*Out of mask = 0*/
+			for (int j = rect.y;j< rect.y+rect.height;++j){
+				for (int i = rect.x; i < rect.x+rect.width;++i){
+					if (tempMask[i-rect.x+(j-rect.y)*rect.width] !=0){
 						roiMask[i+j*width] =1;	/*In ROI = 1, out = 0*/
 						++roiPixels;
 					}
 				}
 			}
-			/*Check whether a polygon can be acquired and include polygon points too if they aren't included already*/
-			/* ImageJ does not include the polygon
-			Polygon polygon = ijROI.getPolygon();
-			if (polygon != null){
-				for (int j = 0;j< polygon.npoints;j++){
-					if (roiMask[polygon.xpoints[j]+polygon.ypoints[j]*width] != 1){
-						roiMask[polygon.xpoints[j]+polygon.ypoints[j]*width] = 1;
-						++roiPixels;
-					}
+		}else{
+			/*rectangular ROI, use bounding rectangle*/
+			for (int j = rect.y;j< rect.y+rect.height;++j){
+				for (int i = rect.x; i < rect.x+rect.width;++i){
+					roiMask[i+j*width] =1;	/*In ROI = 1, out = 0*/
+					++roiPixels;
 				}
 			}
-			*/
-			
 		}
-		
+
 		/*Do polynomial fit on the pixels*/
 		double[][] fitArray = new double[roiPixels][2];
 		double[] roiCentre = new double[2];	//Figure out roi centre to calculate X-, and Y-rotations
@@ -235,7 +238,7 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 			if (!rowData.isEmpty()){
 				Double[] xCoordinates = rowData.toArray(new Double[0]);
 				widths.add(xCoordinates[maxInd(xCoordinates)]-xCoordinates[minInd(xCoordinates)]+1);
-				IJ.log("Row width "+widths.get(widths.size()-1)+" "+rowData.size());
+				//IJ.log("Row width "+widths.get(widths.size()-1)+" "+rowData.size());
 				tempWidth+=widths.get(widths.size()-1);
 				pixNum+=widths.get(widths.size()-1);
 			}
@@ -268,14 +271,27 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 			}
 			intRes[i]/=(double)pixelInts[i].size();
 		}
-		tempImage.show();
+		
+		
+		
+		
+		
+		/*
+		Roi tRoi = new Roi(rect);
+		Overlay olay = new Overlay();
+		olay.add(new Roi(imp.getProcessor().getRoi()));
+		tempImage.setOverlay(olay);
+		*/
+		
+		
+		//tempImage.show();
 				
 		/**Create (if it doesn't yet exist) a results panel*/
 		TextPanel textPanel = IJ.getTextPanel();
 		if (textPanel == null) {textPanel = new TextPanel("ROIAnalyzer results");}
 		/*Add header if missing*/
 		if (textPanel.getLineCount() == 0){
-			String headerString = "";
+			String headerString = "area\t";
 			headerString+="Width ["+calib.getUnit()+"]\tMean width ["+calib.getUnit()+"]\tWeighted mean width ["+calib.getUnit()+"]\tMean intensity\t";
 			for (int i = 1;i<intRes.length;++i){
 				headerString+="Region "+i+" intensity";
@@ -290,13 +306,18 @@ public class ROISubregions implements PlugIn,AdjustmentListener, MouseWheelListe
 		
 
 		/*Print the results*/
-		String resString = "";
+		String resString = (roiPixels*widthScale*heightScale)+"\t";
 		resString+=(roiWidth*widthScale)+"\t"+(tempWidth/widths.size()*widthScale)+"\t"+(weightedWidth*widthScale)+"\t"+intRes[0]+"\t";
 		for (int i = 1;i<intRes.length;++i){
 			resString+=intRes[i]+"\t";
 		}
 		textPanel.appendLine(resString);
 		textPanel.updateDisplay();
+		
+		
+
+		
+		
 		
 		/*Visualize the polynomial fit*/
 		/*
