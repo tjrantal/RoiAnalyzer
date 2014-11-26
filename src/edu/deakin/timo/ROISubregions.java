@@ -42,7 +42,8 @@ public class ROISubregions implements PlugIn {
 		imw = WindowManager.getCurrentWindow();
 		canvas = imw.getCanvas();
         imp = WindowManager.getCurrentImage();
-        
+		//IJ.log(imp.getStack().getShortSliceLabel(imp.getSlice()));
+
 		int[] subDivisions = new int[]{5,1};	/*Get this from a menu, width wise divisions, height wise*/
 		
 		/*Check that an image was open*/
@@ -62,8 +63,9 @@ public class ROISubregions implements PlugIn {
 		int width = imp.getWidth();
 		int height = imp.getHeight();
 		depth = imp.getStackSize();
-		int currentSlice = imp.getSlice();
-		IJ.log("stack depth "+depth+" current slice "+currentSlice);
+		int currentSlice =imp.getSlice();
+		
+		//IJ.log("stack depth "+depth+" current slice "+currentSlice);
 		/**Get the visualization stack*/
 		ImagePlus visualIP = getVisualizationStack(imp);
 		
@@ -171,35 +173,35 @@ public class ROISubregions implements PlugIn {
 		Window vsw = WindowManager.getWindow(visualName);
 		ImagePlus visualIP;
 		if (vsw == null){
-			IJ.log("Didn't find visual stack");
+			//IJ.log("Didn't find visual stack");
 			/*Create a visualization stack, duplicate the original stack*/
 			ImageStack visualizationStack = new ImageStack(width,height);
-			IJ.log("Stack created");
+			//IJ.log("Stack created");
 			for (int i = 1;i<=depth;++i){
 				imp.setSlice(i);
-				IJ.log("Slice changed");
+				//IJ.log("Slice changed");
 				short[] slicePixels = Arrays.copyOf((short[]) imp.getProcessor().getPixels(),((short[])imp.getProcessor().getPixels()).length);
-				IJ.log("Copied pixels "+slicePixels.length);
+				//IJ.log("Copied pixels "+slicePixels.length);
 				//visualizationStack.addSlice(imp.duplicate().getProcessor());
 				visualizationStack.addSlice(null,slicePixels);
-				IJ.log("Added slice "+i);
+				//IJ.log("Added slice "+i);
 			}
-			IJ.log("Set imp to currentSlice");
+			//IJ.log("Set imp to currentSlice");
 			imp.setSlice(currentSlice);
 			
 			//visualizationStack =imp.getImageStack().duplicate();
-			IJ.log("Duplicated stack");
+			//IJ.log("Duplicated stack");
 			//visualIP = imp.duplicate(); //new ImagePlus(visualName,visualizationStack);
 			visualIP = new ImagePlus(visualName,visualizationStack);
 			//visualIP.setTitle(visualName);
-			IJ.log("Got imagePlus for vstack");
+			//IJ.log("Got imagePlus for vstack");
 			new ImageConverter(visualIP).convertToRGB();	//Convert the stack to RGB for visualization
-			IJ.log("Converted to RGB");			
+			//IJ.log("Converted to RGB");			
 		}else{
-			IJ.log("Found visual stack");
+			//IJ.log("Found visual stack");
 			WindowManager.setWindow(vsw);
 			if (vsw instanceof ImageWindow){
-				IJ.log("visual stack instanceof ImageWindow");
+				//IJ.log("visual stack instanceof ImageWindow");
 				WindowManager.setCurrentWindow((ImageWindow) vsw);
 			}
 			

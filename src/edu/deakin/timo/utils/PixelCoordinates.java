@@ -9,6 +9,14 @@ public class PixelCoordinates{
 	public double[] centreCoordinates;
 	public int roiPixels;
 	public double angle;
+	
+	/**
+		Constructor
+		@param mask the byte mask for calculating ROI pixel coordinates for
+		@param width the width of the image the mask corresponds to
+		@param height the height of the image the mask corresponds to
+	*/
+	
 	public PixelCoordinates(byte[] mask,int width, int height){
 		roiPixels = 0;
 		for (int i = 0; i<mask.length;++i){

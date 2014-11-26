@@ -9,6 +9,7 @@ import ij.ImagePlus;
 import ij.measure.Calibration;
 import ij.text.TextPanel;
 import ij.IJ;
+import ij.io.FileInfo;
 
 public class SubRegions{
 	private ImagePlus imp;
@@ -59,8 +60,6 @@ public class SubRegions{
 		subregions[1]	= assignPixelsToSubregions(tempRotated[1],yMinMax,divisions[1]);
 		/**Calculate sub-region results*/
 		getSubregionResults(tempRotated);
-		/**Print out the results*/
-		printResults();
 	}
 	
 	public int[][] getSubregions(){
@@ -75,10 +74,22 @@ public class SubRegions{
 		/*Add header if missing*/
 		if (textPanel.getLineCount() == 0){
 			String headerString = "StackName\tSliceNo\tarea\t";
+			//Whole ROI results
 			headerString+="Width ["+calib.getUnit()+"]\tMean width ["+calib.getUnit()+"]\tWeighted mean width ["+calib.getUnit()+"]\tHeight ["+calib.getUnit()+"]\tMean height ["+calib.getUnit()+"]\tWeighted mean height ["+calib.getUnit()+"]\tMean intensity\t";
+			
 			for (int j = 0;j<subRegionIntensities[0].length;++j){
 				for (int i = 0;i<subRegionIntensities.length;++i){
 					headerString+="Region r "+j+" c "+i+" intensity\t";
+				}
+			}
+			for (int j = 0;j<subRegionAreas[0].length;++j){
+				for (int i = 0;i<subRegionAreas.length;++i){
+					headerString+="Region r "+j+" c "+i+" area\t";
+				}
+			}
+			for (int j = 0;j<subRegionHeights[0].length;++j){
+				for (int i = 0;i<subRegionHeights.length;++i){
+					headerString+="Region r "+j+" c "+i+" weighted height ["+calib.getUnit()+"]\t";
 				}
 			}
 			textPanel.setColumnHeadings(headerString);
@@ -86,19 +97,29 @@ public class SubRegions{
 
 		/*Print the results*/
 		String resString = "";
-		resString += imp.getTitle()+"\t";
+		resString += imp.getOriginalFileInfo().directory+imp.getTitle()+"_"+imp.getStack().getShortSliceLabel(imp.getSlice())+"\t";
 		resString += imp.getSlice()+"\t";
 		resString += (pc.roiPixels*widthScale*heightScale)+"\t";
 		for (int i = 0; i<widthWs.length;++i){
 			resString += (widthWs[i]*widthScale)+"\t";
 		}
 		for (int i = 0; i<heightWs.length;++i){
-			resString += (heightWs[i]*widthScale)+"\t";
+			resString += (heightWs[i]*heightScale)+"\t";
 		}
 		resString += (meanIntensity)+"\t";
 		for (int j = 0;j<subRegionIntensities[0].length;++j){
 			for (int i = 0;i<subRegionIntensities.length;++i){
 				resString += (subRegionIntensities[i][j])+"\t";
+			}
+		}
+		for (int j = 0;j<subRegionAreas[0].length;++j){
+			for (int i = 0;i<subRegionAreas.length;++i){
+				resString += (subRegionAreas[i][j]*widthScale*heightScale)+"\t";
+			}
+		}		
+		for (int j = 0;j<subRegionHeights[0].length;++j){
+			for (int i = 0;i<subRegionHeights.length;++i){
+				resString += (subRegionHeights[i][j]*heightScale)+"\t";
 			}
 		}
 		//public double[][] subRegionAreas;
@@ -109,6 +130,7 @@ public class SubRegions{
 	
 	/**
 		Calculate sub-region results
+		@param tempRotated a 2 x N array with rotated X-, and Y-coordinates
 	*/
 	private void getSubregionResults(double[][] tempRotated){
 		widthWs		= getRegionWidth(tempRotated,new int[]{0,1});
@@ -116,10 +138,12 @@ public class SubRegions{
 		
 		/*Calculate sub region intensities*/
 		ArrayList<Double> meanInt = new ArrayList();
-		ArrayList<Double>[][] regionInts = (ArrayList<Double>[][]) new ArrayList[divisions[0]][divisions[1]];	/**First for mean, and then the subregions*/
+		ArrayList<Double>[][] regionInts = (ArrayList<Double>[][]) new ArrayList[divisions[0]][divisions[1]];
+		ArrayList<Double[]>[][] regionCoords = (ArrayList<Double[]>[][]) new ArrayList[divisions[0]][divisions[1]];		
 		for (int i = 0;i<regionInts.length;++i){
 			for (int j = 0;j<regionInts[i].length;++j){
 				regionInts[i][j] = new ArrayList<Double>();
+				regionCoords[i][j] = new ArrayList<Double[]>();
 			}
 		}
 		
@@ -128,6 +152,7 @@ public class SubRegions{
 			double pixelIntensity = tempPointer[(int)pc.coordinates[i][0]+(int)pc.coordinates[i][1]*width];
 			meanInt.add(pixelIntensity);
 			regionInts[subregions[0][i]][subregions[1][i]].add(pixelIntensity);
+			regionCoords[subregions[0][i]][subregions[1][i]].add(new Double[]{pc.coordinates[i][0],pc.coordinates[i][1]});
 		}
 		
 		meanIntensity = 0;
@@ -137,9 +162,9 @@ public class SubRegions{
 		meanIntensity/=(double) meanInt.size();
 
 		
-		subRegionIntensities = new double[divisions[0]][divisions[1]];	 
-		subRegionAreas = new double[divisions[0]][divisions[1]];	
-		//subRegionHeights = new double[divisions[0]][division[1]];	
+		subRegionIntensities	= new double[divisions[0]][divisions[1]];	 
+		subRegionAreas			= new double[divisions[0]][divisions[1]];
+		subRegionHeights		= new double[divisions[0]][divisions[1]];		
 		for (int i = 0; i<regionInts.length;++i){
 			for (int j = 0;j<regionInts[i].length;++j){
 				for (int p = 0; p < regionInts[i][j].size();++p) {
@@ -149,8 +174,28 @@ public class SubRegions{
 				subRegionAreas[i][j] = (double)regionInts[i][j].size();
 			}
 		}
+		//IJ.log("Subregions");
+		/**Calculate subregion heights*/
+		for (int i = 0; i<regionCoords.length;++i){
+			for (int j = 0;j<regionCoords[i].length;++j){
+				//Create temp rotated coordinates comprising just the subregion pixels
+				double[][] tempRotatedRegion = new double[2][regionCoords[i][j].size()];
+				for (int p = 0; p < regionCoords[i][j].size();++p) {
+					tempRotatedRegion[0][p] = regionCoords[i][j].get(p)[0].doubleValue();
+					tempRotatedRegion[1][p] = regionCoords[i][j].get(p)[1].doubleValue();
+				}
+				double temp[] = getRegionWidth(tempRotatedRegion,new int[]{1,0});
+				subRegionHeights[i][j] = temp[2];
+			}
+		}
 	}
-	
+
+	/**
+		Calculate the width from x or y-coordinates
+		@param tempRotated, a 2 x N array with rotated X-, and Y-coordinates
+		@param ind whether to calculate the widths along the first ({0,1}), or the second {1,0} array.
+		@return result 1D array with max width, mean width, and weighted mean width
+	*/
 	private double[] getRegionWidth(double[][] tempRotated,int[] ind){
 		double[] result = new double[3];	//0 = width, 1 = average width, 2 = weighted width
 		/*Calculate row by row width results*/
@@ -177,7 +222,7 @@ public class SubRegions{
 			}
 			
 		}
-		result[1]/=widths.size();	//mean width of rows
+		result[1]=tempWidth/widths.size();	//mean width of rows
 		/*Calculate weighted average for ROI width*/
 		double weightedWidth = 0;
 		for (int i = 0; i<widths.size();++i){
@@ -220,7 +265,6 @@ public class SubRegions{
 		@param array the array to search for the minimum value for
 		@return ind the index of the minimum value within the array
 	*/
-	
 	private int minInd(Double[] array){
 		double[] temp = new double[array.length];
 		for (int i = 0;i<array.length;++i){
