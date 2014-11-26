@@ -19,6 +19,12 @@ import java.awt.*;
 import java.awt.event.*;	
 import java.text.*;
 import edu.deakin.timo.utils.*;
+/*Choosing and saving a file*/
+import javax.swing.SwingUtilities;
+import javax.swing.JFileChooser;
+import java.util.prefs.Preferences;		/*Saving the file save path -> no need to re-browse...*/
+import java.io.File;
+import java.io.IOException;
 
 /*
  Performs connected region growing. User is asked to provide the seed area points.
@@ -34,8 +40,10 @@ public class ROISubregions implements PlugIn {
 	ImagePlus imp;
 	int currentSlice = -1;
 	int depth = -1;
-
-
+	private JFileChooser fileChooser;		/**Selecting the file to save to*/
+	private Preferences preferences;		/**Saving the default file path*/
+	private final String keySP = "SP";
+	private String savePath;
 	
 	/**Implement the PlugIn interface*/
     public void run(String arg) {
@@ -79,6 +87,7 @@ public class ROISubregions implements PlugIn {
 		subRegions.printResults();	//Print the results to a TextPanel
 		/*Color the subregions to visualize the division*/
 		visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
+		subRegions.saveResults(savePath,imp,visualIP);	//Print the results to a TextPanel
 		/*Re-activate the original stack*/
 		WindowManager.setCurrentWindow(imw); 
 	}
@@ -196,7 +205,37 @@ public class ROISubregions implements PlugIn {
 			//visualIP.setTitle(visualName);
 			//IJ.log("Got imagePlus for vstack");
 			new ImageConverter(visualIP).convertToRGB();	//Convert the stack to RGB for visualization
-			//IJ.log("Converted to RGB");			
+			
+			/**Define save path*/
+			preferences = Preferences.userRoot().node(this.getClass().getName());
+			try{
+				savePath = preferences.get(keySP,new File( "." ).getCanonicalPath()); /*Use current working directory as
+			default*/
+			}catch (IOException ex){
+				System.out.println(ex);
+				savePath = ".";
+			}
+			/*Instantiate fileChooser*/
+			fileChooser = new JFileChooser(savePath);							/*Implements the file chooser*/
+			//fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);	/*Limit to choosing files*/
+			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			int returnVal = fileChooser.showOpenDialog(WindowManager.getActiveWindow());
+             if (returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+				try{
+					if (file.isDirectory()){
+						preferences.put(keySP,file.getCanonicalPath());
+					}else{
+						preferences.put(keySP,(new File(file.getParent())).getCanonicalPath());
+					}
+					System.out.println("Save path set "+preferences.get(keySP,"."));
+				}catch (IOException ex){
+					System.out.println(ex);
+					savePath = ".";
+				}
+            } else {
+                System.out.println("Cancelled file dialog");
+            }
 		}else{
 			//IJ.log("Found visual stack");
 			WindowManager.setWindow(vsw);
@@ -208,7 +247,15 @@ public class ROISubregions implements PlugIn {
 			//WindowManager.setCurrentWindow(WindowManager.getActiveWindow());
 			visualIP =   WindowManager.getCurrentImage();
 			//visualizationStack = visualIP.getImageStack();
-			
+			/**Define save path, read the value from preferences*/
+			preferences = Preferences.userRoot().node(this.getClass().getName());
+			try{
+				savePath = preferences.get(keySP,new File( "." ).getCanonicalPath()); /*Use current working directory as
+			default*/
+			}catch (IOException ex){
+				System.out.println(ex);
+				savePath = ".";
+			}
 		}
 		visualIP.setSlice(currentSlice);
 		return visualIP;

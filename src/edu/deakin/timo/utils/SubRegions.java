@@ -5,11 +5,15 @@
 package edu.deakin.timo.utils;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import ij.ImagePlus;
 import ij.measure.Calibration;
 import ij.text.TextPanel;
 import ij.IJ;
 import ij.io.FileInfo;
+import ij.io.FileSaver;
 
 public class SubRegions{
 	private ImagePlus imp;
@@ -66,7 +70,24 @@ public class SubRegions{
 		return subregions;
 	}
 	
-	/***/
+	
+	/**Save the TextPanel,and visualization stack*/
+	public void saveResults(String savePath,ImagePlus image,ImagePlus visualStack){
+		TextPanel textPanel = IJ.getTextPanel();
+		if (textPanel != null){
+			String stackPath = imp.getOriginalFileInfo().directory;
+			IJ.log("Stack path "+stackPath);
+			String[] folderName = stackPath.split(new String("\\\\"));//.substring(stackPath.lastIndexOf("\\")+1);
+			IJ.log("Save name and Path "+savePath+"\\"+folderName[folderName.length-2]+"_"+folderName[folderName.length-1]+".xls");
+			DateFormat dForm = new SimpleDateFormat("yyyy_MM_dd");
+			textPanel.saveAs(savePath+"\\"+folderName[folderName.length-2]+"_"+folderName[folderName.length-1]+"_"+dForm.format(new Date())+".xls");
+			//Save teh visualStack as well
+			FileSaver fs = new FileSaver(visualStack);
+			fs.saveAsTiffStack(savePath+"\\"+folderName[folderName.length-2]+"_"+folderName[folderName.length-1]+"_"+dForm.format(new Date())+".tiff");			
+		}
+	
+	}
+	/**Print the results to a TextPanel*/
 	public void printResults(){
 		/**Create (if it doesn't yet exist) a results panel*/
 		TextPanel textPanel = IJ.getTextPanel();
@@ -97,7 +118,7 @@ public class SubRegions{
 
 		/*Print the results*/
 		String resString = "";
-		resString += imp.getOriginalFileInfo().directory+imp.getTitle()+"_"+imp.getStack().getShortSliceLabel(imp.getSlice())+"\t";
+		resString += imp.getOriginalFileInfo().directory+imp.getStack().getShortSliceLabel(imp.getSlice())+"\t";
 		resString += imp.getSlice()+"\t";
 		resString += (pc.roiPixels*widthScale*heightScale)+"\t";
 		for (int i = 0; i<widthWs.length;++i){
