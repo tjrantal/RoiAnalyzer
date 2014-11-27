@@ -79,26 +79,34 @@ public class ROISubregions implements PlugIn {
 			rMan = RoiManager.getInstance();
 		}
 		/**Add the ROI to roimanager*/
-		rMan.add(imp,imp.getRoi(),imp.getSlice());
-		//IJ.log("stack depth "+depth+" current slice "+currentSlice);
-		/**Get the visualization stack*/
-		ImagePlus visualIP = getVisualizationStack(imp);
-		
-		/**Get ROI mask for the current ROI*/
-		byte[] roiMask = getRoiMask(imp);
-		/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
-		PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height);
-		
-		SubRegions subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
-		subRegions.printResults();	//Print the results to a TextPanel
-		/*Color the subregions to visualize the division*/
-		visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
-		subRegions.saveResults(savePath,imp,visualIP,rMan);	//Print the results to a TextPanel
-		/*Re-activate the original stack*/
-		WindowManager.toFront(imw);
-		WindowManager.setWindow(imw); 
-		WindowManager.setCurrentWindow(imw); 
-		
+		//Go through 8 consecutive slices
+		ImagePlus visualIP		= null;
+		SubRegions subRegions	= null;
+		for (int i = 0; i<8;++i){
+			imp.setSlice(currentSlice);
+			rMan.add(imp,imp.getRoi(),imp.getSlice());
+			//IJ.log("stack depth "+depth+" current slice "+currentSlice);
+			/**Get the visualization stack*/
+			visualIP = getVisualizationStack(imp);
+			
+			/**Get ROI mask for the current ROI*/
+			byte[] roiMask = getRoiMask(imp);
+			/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
+			PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height);
+			
+			subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
+			subRegions.printResults();	//Print the results to a TextPanel
+			/*Color the subregions to visualize the division*/
+			visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
+			/*Re-activate the original stack*/
+			WindowManager.toFront(imw);
+			WindowManager.setWindow(imw); 
+			WindowManager.setCurrentWindow(imw); 
+			++currentSlice;
+		}
+		if (visualIP != null && subRegions != null){
+			subRegions.saveResults(savePath,imp,visualIP,rMan);	//Save the results to disk		
+		}
 	}
 	
 	private void visualizeRegions(ImagePlus visualIP,SubRegions subRegions,int[] subDivisions,PixelCoordinates pc){
