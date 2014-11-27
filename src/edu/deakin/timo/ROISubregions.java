@@ -34,9 +34,7 @@ import java.io.IOException;
 public class ROISubregions implements PlugIn {
 	
 	ImageWindow imw;
-	//ImageWindow visualizationStackWindow;
 	ImageCanvas canvas;
-	RoiManager rMan;
 	ImagePlus imp;
 	int currentSlice = -1;
 	int depth = -1;
@@ -44,6 +42,7 @@ public class ROISubregions implements PlugIn {
 	private Preferences preferences;		/**Saving the default file path*/
 	private final String keySP = "SP";
 	private String savePath;
+	RoiManager rMan;
 	
 	/**Implement the PlugIn interface*/
     public void run(String arg) {
@@ -73,10 +72,17 @@ public class ROISubregions implements PlugIn {
 		depth = imp.getStackSize();
 		int currentSlice =imp.getSlice();
 		
+		/**Pop up Roi Manager*/
+		if (RoiManager.getInstance() == null){
+			rMan = new RoiManager();
+		}else{
+			rMan = RoiManager.getInstance();
+		}
+		/**Add the ROI to roimanager*/
+		rMan.add(imp,imp.getRoi(),imp.getSlice());
 		//IJ.log("stack depth "+depth+" current slice "+currentSlice);
 		/**Get the visualization stack*/
 		ImagePlus visualIP = getVisualizationStack(imp);
-		
 		
 		/**Get ROI mask for the current ROI*/
 		byte[] roiMask = getRoiMask(imp);
@@ -87,9 +93,12 @@ public class ROISubregions implements PlugIn {
 		subRegions.printResults();	//Print the results to a TextPanel
 		/*Color the subregions to visualize the division*/
 		visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
-		subRegions.saveResults(savePath,imp,visualIP);	//Print the results to a TextPanel
+		subRegions.saveResults(savePath,imp,visualIP,rMan);	//Print the results to a TextPanel
 		/*Re-activate the original stack*/
+		WindowManager.toFront(imw);
+		WindowManager.setWindow(imw); 
 		WindowManager.setCurrentWindow(imw); 
+		
 	}
 	
 	private void visualizeRegions(ImagePlus visualIP,SubRegions subRegions,int[] subDivisions,PixelCoordinates pc){

@@ -14,6 +14,7 @@ import ij.text.TextPanel;
 import ij.IJ;
 import ij.io.FileInfo;
 import ij.io.FileSaver;
+import ij.plugin.frame.RoiManager;
 
 public class SubRegions{
 	private ImagePlus imp;
@@ -72,18 +73,17 @@ public class SubRegions{
 	
 	
 	/**Save the TextPanel,and visualization stack*/
-	public void saveResults(String savePath,ImagePlus image,ImagePlus visualStack){
+	public void saveResults(String savePath,ImagePlus image,ImagePlus visualStack,RoiManager rMan){
 		TextPanel textPanel = IJ.getTextPanel();
 		if (textPanel != null){
 			String stackPath = imp.getOriginalFileInfo().directory;
-			IJ.log("Stack path "+stackPath);
-			String[] folderName = stackPath.split(new String("\\\\"));//.substring(stackPath.lastIndexOf("\\")+1);
-			IJ.log("Save name and Path "+savePath+"\\"+folderName[folderName.length-2]+"_"+folderName[folderName.length-1]+".xls");
+			String[] folderName = stackPath.split(new String("\\\\"));
 			DateFormat dForm = new SimpleDateFormat("yyyy_MM_dd");
-			textPanel.saveAs(savePath+"\\"+folderName[folderName.length-2]+"_"+folderName[folderName.length-1]+"_"+dForm.format(new Date())+".xls");
-			//Save teh visualStack as well
-			FileSaver fs = new FileSaver(visualStack);
-			fs.saveAsTiffStack(savePath+"\\"+folderName[folderName.length-2]+"_"+folderName[folderName.length-1]+"_"+dForm.format(new Date())+".tiff");			
+			String saveName = savePath+"\\"+folderName[folderName.length-1]+"_"+dForm.format(new Date()); 
+			textPanel.saveAs(saveName+".xls");			//Save textPanel
+			FileSaver fs = new FileSaver(visualStack);	//Get fileSaver for visualization stack
+			fs.saveAsTiffStack(saveName+".tiff");		//Save visualization stack
+			rMan.runCommand("Save",saveName+".zip");	//Save Rois
 		}
 	
 	}
