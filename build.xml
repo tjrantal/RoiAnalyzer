@@ -13,7 +13,7 @@
 	paths to dependencies, make sure these match....
 	-->
 	<property name="ijPluginPath2" location="D:/timo/software/ImageJ/plugins/jars" /> 
-	<property name="ijPluginPath3" location="D:/timo/research/BelavyIVDisks2014/ImageJ/plugins/jars" /> 
+	<property name="ijPluginPath3" location="c:/timo/research/BelavyIVDisks2014/ImageJ/plugins/jars" /> 
 	<property name="ijPath" location="D:/timo/software/ImageJ" />
 	<property name="imagej" location="${ijPath}/ij.jar" />
 	
