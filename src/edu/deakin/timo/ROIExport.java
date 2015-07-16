@@ -53,7 +53,7 @@ public class ROIExport implements PlugIn {
 				rSettings = new ROISettings();	//Should never get here!
 			}
 		}
-		
+		rSettings.setVisible(true);
 		/*Check that an image was open*/
 		if (imp == null) {
             IJ.noImage();
@@ -70,13 +70,14 @@ public class ROIExport implements PlugIn {
 				double heightScale = calib.pixelHeight;
 				double widthScale = calib.pixelWidth;
 				for (int i = 0; i<polygonToSave.npoints;++i){
-					means[0] += ((double)polygonToSave.xpoints[i])*widthScale;
-					means[1] += ((double)polygonToSave.ypoints[i])*heightScale;
+					means[0] += ((double)polygonToSave.xpoints[i]);//*widthScale;
+					means[1] += ((double)polygonToSave.ypoints[i]);//*heightScale;
 				}
 				means[0]/=(double)polygonToSave.npoints;
 				means[1]/=(double)polygonToSave.npoints;
+				rSettings.saveSettings();	//Save ROISettings settings
 				String settings[] = rSettings.getSettings();
-				String saveName = settings[2]+"/ROIs/"+imp.getShortTitle()+"/"+imp.getStack().getShortSliceLabel(imp.getCurrentSlice())
+				String saveName = settings[2]+"/"+settings[4]+"/"+imp.getShortTitle()+"/"+imp.getStack().getShortSliceLabel(imp.getCurrentSlice())
 				+"_"+String.format("%04d",(int) means[1])
 				+"_"+String.format("%04d",(int) means[0])
 				+".txt";
@@ -87,7 +88,7 @@ public class ROIExport implements PlugIn {
 					bw.write("No\tX [pixels]\tY  [pixels]\tX [mm]\tY [mm]\n");
 					//Write the coordinates
 					for (int i = 0; i<polygonToSave.npoints;++i){
-						bw.write(String.format("%d\t%d\t%d\t%f\t%f\n",i
+						bw.write(String.format(Locale.US,"%d\t%d\t%d\t%f\t%f\n",i
 						,polygonToSave.xpoints[i],polygonToSave.ypoints[i]
 						,((double)polygonToSave.xpoints[i])*widthScale,((double)polygonToSave.ypoints[i])*heightScale));
 					}

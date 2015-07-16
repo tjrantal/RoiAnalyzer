@@ -25,8 +25,8 @@ import java.awt.*;		/*Layout*/
 public class ROISettings extends JFrame {
 	
 	private Preferences preferences;		/**Saving the default file path*/
-	public final String[] keys = {"Sub-region Rows","Sub-region Columns","Root Directory","Results Sub-directory"};
-	private final String[] defaults = {"5","5","c:/Output","IVD"};
+	public final String[] keys = {"Sub-region Rows","Sub-region Columns","Root Directory","Results Sub-directory","Roi results directory"};
+	private final String[] defaults = {"5","5","c:/Output","IVD","ROIs"};
 	private String[] settings;
 	private JTextField[] textFields;
 
@@ -60,6 +60,10 @@ public class ROISettings extends JFrame {
 		this.setLocation(20,20);
 		this.pack();
 		this.setVisible(true);
+		this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);	//Only hide the window instead of disposing
+		//this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		//this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		//this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 	}
 
 	public void saveSettings(){
@@ -82,4 +86,6 @@ public class ROISettings extends JFrame {
 		}
 		return settings;
 	}
+	
+	
 }

@@ -29,6 +29,8 @@ public class ROISettingsPlugin implements PlugIn {
 		//If ROISettings have not been opened, create new
 		if (fr>= frames.length || frames[fr].getTitle() != "ROISettings"){
 			new ROISettings();
+		}else{
+			frames[fr].setVisible(true);
 		}
 	}
 }
