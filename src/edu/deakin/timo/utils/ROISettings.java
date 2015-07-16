@@ -69,6 +69,7 @@ public class ROISettings extends JFrame {
 	public void saveSettings(){
 		/*Save Preferences*/
 		//System.out.println("Saving prefs");
+		getSettings();
 		for (int i = 0; i<keys.length;++i){
 			preferences.put(keys[i],settings[i]);
 			//System.out.println(keys[i]+" "+settings[i]);

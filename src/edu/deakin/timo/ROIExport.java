@@ -75,8 +75,8 @@ public class ROIExport implements PlugIn {
 				}
 				means[0]/=(double)polygonToSave.npoints;
 				means[1]/=(double)polygonToSave.npoints;
-				rSettings.saveSettings();	//Save ROISettings settings
 				String settings[] = rSettings.getSettings();
+				rSettings.saveSettings();	//Save ROISettings settings
 				String saveName = settings[2]+"/"+settings[4]+"/"+imp.getShortTitle()+"/"+imp.getStack().getShortSliceLabel(imp.getCurrentSlice())
 				+"_"+String.format("%04d",(int) means[1])
 				+"_"+String.format("%04d",(int) means[0])
