@@ -70,7 +70,8 @@ public class ROISubregions implements PlugIn {
 		}
 		rSettings.setVisible(true);
 		String settings[] = rSettings.getSettings();
-
+		rSettings.saveSettings();	//Save ROISettings settings
+		
 		int[] subDivisions = new int[]{Integer.parseInt(settings[1]),Integer.parseInt(settings[0])};	/*Get this from a menu, width wise divisions (columns), height wise (rows)*/
 		
 		/*Check that an image was open*/
@@ -101,7 +102,7 @@ public class ROISubregions implements PlugIn {
 		PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height);
 		
 		subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
-		subRegions.printResults();	//Print the results to a TextPanel
+		subRegions.printResults(settings,imp);	//Print the results to a TextPanel
 		/**Get the visualization stack*/
 		if (Double.parseDouble(settings[5]) >= 1){
 			ImagePlus visualIP		= null;

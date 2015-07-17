@@ -15,6 +15,10 @@ import ij.IJ;
 import ij.io.FileInfo;
 import ij.io.FileSaver;
 import ij.plugin.frame.RoiManager;
+import ij.gui.Roi;
+import java.io.*;
+import java.awt.Polygon;
+
 
 public class SubRegions{
 	private ImagePlus imp;
@@ -35,6 +39,7 @@ public class SubRegions{
 	public double[][] subRegionIntensities;	 
 	public double[][] subRegionAreas;
 	public double[][] subRegionHeights;
+	public double[][] subRegionWeightedHeights;
 	
 	/**
 		Constructor
@@ -87,32 +92,41 @@ public class SubRegions{
 		}
 	
 	}
+	
 	/**Print the results to a TextPanel*/
-	public void printResults(){
+	public void printResults(String[] settings, ImagePlus imp){
 		/**Create (if it doesn't yet exist) a results panel*/
 		TextPanel textPanel = IJ.getTextPanel();
 		if (textPanel == null) {textPanel = new TextPanel("ROIAnalyzer results");}
-		/*Add header if missing*/
-		if (textPanel.getLineCount() == 0){
-			String headerString = "StackName\tSliceNo\tarea\t";
-			//Whole ROI results
-			headerString+="Width ["+calib.getUnit()+"]\tMean width ["+calib.getUnit()+"]\tWeighted mean width ["+calib.getUnit()+"]\tHeight ["+calib.getUnit()+"]\tMean height ["+calib.getUnit()+"]\tWeighted mean height ["+calib.getUnit()+"]\tMean intensity\t";
+		
+		//Prepare header (needed for the textfile, and for the TextPanel, if it isn't open yet
+		String headerString = "StackName\tSliceNo\tarea\trotation [rad]\t";
+		//Whole ROI results
+		headerString+="Max Width ["+calib.getUnit()+"]\tMean width ["+calib.getUnit()+"]\tWeighted mean width ["+calib.getUnit()+"]\tMax Height ["+calib.getUnit()+"]\tMean height ["+calib.getUnit()+"]\tWeighted mean height ["+calib.getUnit()+"]\tMean intensity\t";
+		
+		for (int j = 0;j<subRegionIntensities[0].length;++j){
+			for (int i = 0;i<subRegionIntensities.length;++i){
+				headerString+="Region r "+j+" c "+i+" intensity\t";
+			}
+		}
+		for (int j = 0;j<subRegionAreas[0].length;++j){
+			for (int i = 0;i<subRegionAreas.length;++i){
+				headerString+="Region r "+j+" c "+i+" area\t";
+			}
+		}
+		for (int j = 0;j<subRegionHeights[0].length;++j){
+			for (int i = 0;i<subRegionHeights.length;++i){
+				headerString+="Region r "+j+" c "+i+" height ["+calib.getUnit()+"]\t";
+			}
+		}
+		for (int j = 0;j<subRegionHeights[0].length;++j){
+			for (int i = 0;i<subRegionHeights.length;++i){
+				headerString+="Region r "+j+" c "+i+" weighted height ["+calib.getUnit()+"]\t";
+			}
+		}
 			
-			for (int j = 0;j<subRegionIntensities[0].length;++j){
-				for (int i = 0;i<subRegionIntensities.length;++i){
-					headerString+="Region r "+j+" c "+i+" intensity\t";
-				}
-			}
-			for (int j = 0;j<subRegionAreas[0].length;++j){
-				for (int i = 0;i<subRegionAreas.length;++i){
-					headerString+="Region r "+j+" c "+i+" area\t";
-				}
-			}
-			for (int j = 0;j<subRegionHeights[0].length;++j){
-				for (int i = 0;i<subRegionHeights.length;++i){
-					headerString+="Region r "+j+" c "+i+" weighted height ["+calib.getUnit()+"]\t";
-				}
-			}
+		/*Add header if missing*/
+		if (textPanel.getLineCount() == 0){		
 			textPanel.setColumnHeadings(headerString);
 		}
 
@@ -121,6 +135,7 @@ public class SubRegions{
 		resString += imp.getOriginalFileInfo().directory+imp.getStack().getShortSliceLabel(imp.getSlice())+"\t";
 		resString += imp.getSlice()+"\t";
 		resString += (pc.roiPixels*widthScale*heightScale)+"\t";
+		resString += pc.angle+"\t";
 		for (int i = 0; i<widthWs.length;++i){
 			resString += (widthWs[i]*widthScale)+"\t";
 		}
@@ -143,9 +158,45 @@ public class SubRegions{
 				resString += (subRegionHeights[i][j]*heightScale)+"\t";
 			}
 		}
+		for (int j = 0;j<subRegionWeightedHeights[0].length;++j){
+			for (int i = 0;i<subRegionWeightedHeights.length;++i){
+				resString += (subRegionWeightedHeights[i][j]*heightScale)+"\t";
+			}
+		}
 		//public double[][] subRegionAreas;
 		textPanel.appendLine(resString);
 		textPanel.updateDisplay();
+		
+		/*Spit the results out into a text file as well*/
+		Roi tempRoi = imp.getRoi();
+		if (tempRoi != null){
+			Polygon polygonToSave = tempRoi.getPolygon();
+			if (polygonToSave != null){
+				//Generate a savename
+				double[] means = new double[2];
+				for (int i = 0; i<polygonToSave.npoints;++i){
+					means[0] += ((double)polygonToSave.xpoints[i]);
+					means[1] += ((double)polygonToSave.ypoints[i]);
+				}
+				means[0]/=(double)polygonToSave.npoints;
+				means[1]/=(double)polygonToSave.npoints;
+				String saveName = settings[2]+"/"+settings[3]+"/"+imp.getShortTitle()+"/"+imp.getStack().getShortSliceLabel(imp.getCurrentSlice())
+				+"_"+String.format("%04d",(int) means[1])
+				+"_"+String.format("%04d",(int) means[0])
+				+".txt";
+				try{
+					File saveFile = new File(saveName);
+					saveFile.getParentFile().mkdirs();	//Create folders for the file, if they don't exist
+					BufferedWriter bw =  new BufferedWriter(new FileWriter(saveFile));
+					bw.write(headerString+"\n");	//Write header
+					bw.write(resString+"\n");		//Write results
+					bw.close();
+				} catch (Exception err) {
+					IJ.log("Couldn't save the polygon");
+				}
+			}
+		}
+		
 	}
 	
 	
@@ -186,6 +237,7 @@ public class SubRegions{
 		subRegionIntensities	= new double[divisions[0]][divisions[1]];	 
 		subRegionAreas			= new double[divisions[0]][divisions[1]];
 		subRegionHeights		= new double[divisions[0]][divisions[1]];		
+		subRegionWeightedHeights	= new double[divisions[0]][divisions[1]];
 		for (int i = 0; i<regionInts.length;++i){
 			for (int j = 0;j<regionInts[i].length;++j){
 				for (int p = 0; p < regionInts[i][j].size();++p) {
@@ -206,7 +258,8 @@ public class SubRegions{
 					tempRotatedRegion[1][p] = regionCoords[i][j].get(p)[1].doubleValue();
 				}
 				double temp[] = getRegionWidth(tempRotatedRegion,new int[]{1,0});
-				subRegionHeights[i][j] = temp[2];
+				subRegionHeights[i][j] = temp[1];
+				subRegionWeightedHeights[i][j] = temp[2];
 			}
 		}
 	}
