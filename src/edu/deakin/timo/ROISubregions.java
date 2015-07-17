@@ -90,11 +90,10 @@ public class ROISubregions implements PlugIn {
 		depth = imp.getStackSize();
 		int currentSlice =imp.getSlice();
 
-		ImagePlus visualIP		= null;
+		
 		SubRegions subRegions	= null;
 
-		/**Get the visualization stack*/
-		visualIP = getVisualizationSlice(imp);
+		
 		
 		/**Get ROI mask for the current ROI*/
 		byte[] roiMask = getRoiMask(imp);
@@ -103,8 +102,14 @@ public class ROISubregions implements PlugIn {
 		
 		subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
 		subRegions.printResults();	//Print the results to a TextPanel
-		/*Color the subregions to visualize the division*/
-		visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
+		/**Get the visualization stack*/
+		if (Double.parseDouble(settings[5]) >= 1){
+			ImagePlus visualIP		= null;
+			visualIP = getVisualizationSlice(imp);
+			/*Color the subregions to visualize the division*/
+			visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
+		}
+		
 		/*Re-activate the original stack*/
 		WindowManager.toFront(imw);
 		WindowManager.setWindow(imw); 
@@ -122,15 +127,18 @@ public class ROISubregions implements PlugIn {
 				rgb[c] = (value >>(c*8))& 0XFF;
 			}
 			//Come up with a proper colour palette selection at some point...
-			rgb[0] = (int) (((double) rgb[0])*((double) ((regionIndices[0][i]+regionIndices[1][i]*subDivisions[0])))/((double)(subDivisions[0]*subDivisions[1])));
-			rgb[1] = (int) (((double) rgb[1])*((double) ((subDivisions[0]*subDivisions[1])-(regionIndices[0][i]+regionIndices[1][i]*subDivisions[0])))/((double)(subDivisions[0]*subDivisions[1])));
-			rgb[2] = (int) (((double) rgb[1])*((double) ((subDivisions[0]*subDivisions[1])-(regionIndices[0][i]*subDivisions[1]+regionIndices[1][i])))/((double)(subDivisions[0]*subDivisions[1])));
+			int addBright = 25;
+			rgb[0] = (regionIndices[0][i] % 3 == 0) ? (rgb[0]+addBright < 255 ? rgb[0]+addBright:255) : (int) (((double) rgb[0])*((double) ((regionIndices[0][i]+regionIndices[1][i]*subDivisions[0])))/((double)(subDivisions[0]*subDivisions[1])));
+			rgb[1] = (regionIndices[1][i] % 3 == 1) ? (rgb[1]+addBright < 255 ? rgb[1]+addBright:255) : (int) (((double) rgb[1])*((double) ((subDivisions[0]*subDivisions[1])-(regionIndices[0][i]+regionIndices[1][i]*subDivisions[0])))/((double)(subDivisions[0]*subDivisions[1])));
+			rgb[2] = ((regionIndices[0][i]*subDivisions[1]+regionIndices[1][i]) % 3 == 2) ? (rgb[2]+addBright < 255 ? rgb[2]+addBright:255) : (int) (((double) rgb[2])*((double) ((subDivisions[0]*subDivisions[1])-(regionIndices[0][i]*subDivisions[1]+regionIndices[1][i])))/((double)(subDivisions[0]*subDivisions[1])));
 			//rgb[1] = (int) ((double) rgb[1])*(((double)(subDivisions[0]*subdivisions[1]))-((double) (regionIndices[0][i]+regionIndices[1][i]*subDivisions[0])))/(((double)(subDivisions[0]*subdivisions[1]);
 
 			visualIP.getProcessor().setColor(new Color(rgb[2],rgb[1],rgb[0]));
 			visualIP.getProcessor().drawPixel((int)pc.coordinates[i][0],(int)pc.coordinates[i][1]);
 		}
 		visualIP.show();
+		//Set position on screen. Get image coordinates -> position next to that
+		visualIP.getWindow().setLocation(imp.getWindow().getLocationOnScreen().x+imp.getWindow().getSize().width+5,imp.getWindow().getLocationOnScreen().y);
 		visualIP.repaintWindow();
 	}
 	
@@ -182,13 +190,13 @@ public class ROISubregions implements PlugIn {
 		int height = imp.getHeight();
 		String stackName = imp.getTitle();
 		String visualName = stackName+" visualization";
-		Window vsw = WindowManager.getWindow(visualName);
 		ImagePlus visualIP;
 		short[] slicePixels = Arrays.copyOf((short[]) imp.getProcessor().getPixels(),((short[])imp.getProcessor().getPixels()).length);
 		ShortProcessor tp = new ShortProcessor(width,height);
 		tp.setPixels(slicePixels);
 		visualIP = new ImagePlus(visualName,tp);
 		new ImageConverter(visualIP).convertToRGB();	//Convert the stack to RGB for visualization
+		
 		return visualIP;
 	}
 }
