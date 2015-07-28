@@ -95,12 +95,32 @@ public class SubRegions{
 	
 	/**Print the results to a TextPanel*/
 	public void printResults(String[] settings, ImagePlus imp){
+		/**Get ROI centre coordinates. Used later on...*/
+		Roi tempRoi = imp.getRoi();
+		String[] centreCoordinates = new String[2];
+		double[] means= new double[2];
+		if (tempRoi != null){
+			Polygon polygonToSave = tempRoi.getPolygon();
+			if (polygonToSave != null){
+				//Generate a savename
+				
+				for (int i = 0; i<polygonToSave.npoints;++i){
+					means[0] += ((double)polygonToSave.xpoints[i]);
+					means[1] += ((double)polygonToSave.ypoints[i]);
+				}
+				means[0]/=(double)polygonToSave.npoints;
+				means[1]/=(double)polygonToSave.npoints;
+				centreCoordinates[0] = String.format("%04d",(int) means[0]);
+				centreCoordinates[1] = String.format("%04d",(int) means[1]);
+			}
+		}
+	
 		/**Create (if it doesn't yet exist) a results panel*/
 		TextPanel textPanel = IJ.getTextPanel();
 		if (textPanel == null) {textPanel = new TextPanel("ROIAnalyzer results");}
 		
 		//Prepare header (needed for the textfile, and for the TextPanel, if it isn't open yet
-		String headerString = "StackName\tSliceNo\tarea\trotation [rad]\t";
+		String headerString = "Path\tStackName\tSliceName\tSliceNo\tROI mean x coordinate [pixel]\tROI mean y coordinate [pixel]\tarea\trotation [rad]\t";
 		//Whole ROI results
 		headerString+="Max Width ["+calib.getUnit()+"]\tMean width ["+calib.getUnit()+"]\tWeighted mean width ["+calib.getUnit()+"]\tMax Height ["+calib.getUnit()+"]\tMean height ["+calib.getUnit()+"]\tWeighted mean height ["+calib.getUnit()+"]\tMean intensity\t";
 		
@@ -132,8 +152,12 @@ public class SubRegions{
 
 		/*Print the results*/
 		String resString = "";
-		resString += imp.getOriginalFileInfo().directory+imp.getStack().getShortSliceLabel(imp.getSlice())+"\t";
+		resString += imp.getOriginalFileInfo().directory+"\t";
+		resString += imp.getShortTitle()+"\t";
+		resString += imp.getStack().getShortSliceLabel(imp.getSlice())+"\t";
 		resString += imp.getSlice()+"\t";
+		resString += means[0]+"\t";
+		resString += means[1]+"\t";
 		resString += (pc.roiPixels*widthScale*heightScale)+"\t";
 		resString += pc.angle+"\t";
 		for (int i = 0; i<widthWs.length;++i){
@@ -168,35 +192,20 @@ public class SubRegions{
 		textPanel.updateDisplay();
 		
 		/*Spit the results out into a text file as well*/
-		Roi tempRoi = imp.getRoi();
-		if (tempRoi != null){
-			Polygon polygonToSave = tempRoi.getPolygon();
-			if (polygonToSave != null){
-				//Generate a savename
-				double[] means = new double[2];
-				for (int i = 0; i<polygonToSave.npoints;++i){
-					means[0] += ((double)polygonToSave.xpoints[i]);
-					means[1] += ((double)polygonToSave.ypoints[i]);
-				}
-				means[0]/=(double)polygonToSave.npoints;
-				means[1]/=(double)polygonToSave.npoints;
-				String saveName = settings[2]+"/"+settings[3]+"/"+imp.getShortTitle()+"/"+imp.getStack().getShortSliceLabel(imp.getCurrentSlice())
-				+"_"+String.format("%04d",(int) means[1])
-				+"_"+String.format("%04d",(int) means[0])
-				+".txt";
-				try{
-					File saveFile = new File(saveName);
-					saveFile.getParentFile().mkdirs();	//Create folders for the file, if they don't exist
-					BufferedWriter bw =  new BufferedWriter(new FileWriter(saveFile));
-					bw.write(headerString+"\n");	//Write header
-					bw.write(resString+"\n");		//Write results
-					bw.close();
-				} catch (Exception err) {
-					IJ.log("Couldn't save the polygon");
-				}
-			}
+		String saveName = settings[2]+"/"+settings[3]+"/"+imp.getShortTitle()+"/"+imp.getStack().getShortSliceLabel(imp.getCurrentSlice())
+		+"_"+centreCoordinates[1]
+		+"_"+centreCoordinates[0]
+		+".txt";
+		try{
+			File saveFile = new File(saveName);
+			saveFile.getParentFile().mkdirs();	//Create folders for the file, if they don't exist
+			BufferedWriter bw =  new BufferedWriter(new FileWriter(saveFile));
+			bw.write(headerString+"\n");	//Write header
+			bw.write(resString+"\n");		//Write results
+			bw.close();
+		} catch (Exception err) {
+			IJ.log("Couldn't save the polygon");
 		}
-		
 	}
 	
 	
