@@ -112,6 +112,8 @@ public class ROISubregions implements PlugIn {
 		}
 		
 		/*Re-activate the original stack*/
+		imw.toFront();
+		imw.requestFocus();
 		WindowManager.toFront(imw);
 		WindowManager.setWindow(imw); 
 		WindowManager.setCurrentWindow(imw); 
