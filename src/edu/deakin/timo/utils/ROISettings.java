@@ -25,8 +25,8 @@ import java.awt.*;		/*Layout*/
 public class ROISettings extends JFrame {
 	
 	private Preferences preferences;		/**Saving the default file path*/
-	public final String[] keys = {"Sub-region Rows","Sub-region Columns","Root Directory","Results Sub-directory","Roi results directory","Visualize Sub-regions [<1 off]"};
-	private final String[] defaults = {"1","5","c:/Output","IVD","ROIs","0"};
+	public final String[] keys = {"Sub-region Rows","Sub-region Columns","Root Directory","Results Sub-directory","Roi results directory","Visualize Sub-regions [<1 off]","ROI to read","Stack path"};
+	private final String[] defaults = {"1","5","c:/Output","IVD","ROIs","0","c:/Output","C:/timo/research/BelavyQuittner2015/stacks"};
 	private String[] settings;
 	private JTextField[] textFields;
 
