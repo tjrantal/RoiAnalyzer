@@ -1,8 +1,9 @@
 macro "SpineReLoad"{
+	//setBatchMode(true);
 	roiPath = "C:\\timo\\research\\BelavyQuittner2015\\output\\";
 	stackPath = "C:\\timo\\research\\BelavyQuittner2015\\stacks\\";
 	folder = "ROIs\\"
-	//setBatchMode(true);
+	
 
 	recurseFolders(roiPath,folder,stackPath);
 	
