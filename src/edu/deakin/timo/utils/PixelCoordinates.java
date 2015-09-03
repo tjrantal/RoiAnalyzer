@@ -3,6 +3,7 @@
 */
 
 package edu.deakin.timo.utils;
+import ij.IJ;
 public class PixelCoordinates{
 	public double[][] coordinates;
 	public double[][] rotatedCoordinates;
@@ -41,6 +42,7 @@ public class PixelCoordinates{
 		centreCoordinates[0]/=(double)roiPixels;
 		centreCoordinates[1]/=(double)roiPixels;
 		angle = getRotationAngle(coordinates);
+		//IJ.log("Angle "+angle/Math.PI*180d);
 		//Calculate rotated coordinates
 		rotatedCoordinates = new double[coordinates.length][2];
 		for (int i = 0;i<coordinates.length;++i){

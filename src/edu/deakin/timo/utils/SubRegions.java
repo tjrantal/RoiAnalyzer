@@ -48,6 +48,7 @@ public class SubRegions{
 		@param divisions 2D array for sub-regions {width divisions,height divisions}
 	*/	
 	public SubRegions(ImagePlus imp,PixelCoordinates pc, int[] divisions){
+		//IJ.log("SR INIT");
 		this.imp		= imp;
 		this.pc			= pc;
 		this.divisions	= divisions;
@@ -61,14 +62,20 @@ public class SubRegions{
 		for (int i = 0;i<pc.rotatedCoordinates.length;++i){
 			tempRotated[0][i] = pc.rotatedCoordinates[i][0];
 			tempRotated[1][i] = pc.rotatedCoordinates[i][1];
+			//IJ.log(i+"\t"+ " x "+pc.coordinates[i][0]+" y "+pc.coordinates[i][1]+ " rx "+tempRotated[0][i]+" ry "+tempRotated[1][i]);
 		}
+		//IJ.log("get xMinMax " +tempRotated[0].length);
+		//IJ.log(""+ minInd(tempRotated[0]));
+		//IJ.log(""+ maxInd(tempRotated[0]));
 		xMinMax = new double[]{tempRotated[0][minInd(tempRotated[0])],tempRotated[0][maxInd(tempRotated[0])]};
 		yMinMax = new double[]{tempRotated[1][minInd(tempRotated[1])],tempRotated[1][maxInd(tempRotated[1])]};
 		/**Assign pixels to subregions*/
+		//IJ.log("get subregions");
 		subregions = new int[2][];
 		subregions[0]	= assignPixelsToSubregions(tempRotated[0],xMinMax,divisions[0]);
 		subregions[1]	= assignPixelsToSubregions(tempRotated[1],yMinMax,divisions[1]);
 		/**Calculate sub-region results*/
+		//IJ.log("get subregionResults");
 		getSubregionResults(tempRotated);
 	}
 	
@@ -363,7 +370,7 @@ public class SubRegions{
 	*/
 	private int minInd(double[] array){
 		int ind = -1;
-		double val = Double.MAX_VALUE;
+		double val = Double.POSITIVE_INFINITY;
 		for (int i = 0;i<array.length;++i){
 			if (array[i] < val){
 				val = array[i];
@@ -393,7 +400,7 @@ public class SubRegions{
 	*/
 	private int maxInd(double[] array){
 		int ind = -1;
-		double val = Double.MIN_VALUE;
+		double val = Double.NEGATIVE_INFINITY;
 		for (int i = 0;i<array.length;++i){
 			if (array[i] > val){
 				val = array[i];
