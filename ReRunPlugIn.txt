@@ -1,0 +1,45 @@
+macro "SpineReLoad"{
+	roiPath = "C:\\timo\\research\\BelavyQuittner2015\\output\\";
+	stackPath = "C:\\timo\\research\\BelavyQuittner2015\\stacks\\";
+	folder = "ROIs\\"
+	//setBatchMode(true);
+
+	recurseFolders(roiPath,folder,stackPath);
+	
+	//setBatchMode(false);
+}
+
+//FUNCTION TO Recurse folders
+function recurseFolders(roiPath,folder,stackPath){
+	files = getFileList(roiPath+folder);
+	//IJ.log("RecurseFolder "+roiPath+folder);
+	for (i =0; i<files.length;++i){
+		testi = File.isDirectory(roiPath+folder+files[i]);
+		if (File.isDirectory(roiPath+folder+files[i])==1){
+			folderName = replace(files[i],"/","\\");
+			testi2 = roiPath+folder;
+			//IJ.log(testi2);
+			recurseFolders(testi2,folderName,stackPath);//files[i],stackPath);
+		}else{
+			if (endsWith(files[i],".txt")){
+				handleRoiFile(roiPath,folder,files[i],stackPath);
+			}
+		}
+	}
+
+
+}
+
+//Handle file
+function handleRoiFile(roiPath,folder,file,stackPath){
+	folderTruncated = substring(folder,0,lengthOf(folder)-1);
+	parameterString = "roi="+roiPath+folder+file+" stack="+stackPath+folderTruncated;
+	//IJ.log(parameterString);
+	run("SetROISettingsPlugin", parameterString);		//Set roi file name, and stack path
+	run("ROI Loader");									//Load the ROI
+	run("ROI subregions");								//Run the measurements on the roi
+	run("Close All");											//Close the image
+	if (isOpen("Exception")){
+		exit("Got Exception");
+	}
+}
