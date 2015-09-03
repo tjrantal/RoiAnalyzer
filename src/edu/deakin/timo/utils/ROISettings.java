@@ -77,6 +77,15 @@ public class ROISettings extends JFrame {
 
 	}
 	
+	/*Set fields*/
+	public void setTextField(String fieldName,String fieldVal){
+		int match = 0;
+		while (match < keys.length && !keys[match].equals(fieldName)){
+			++match;
+		}
+		textFields[match].setText(fieldVal);
+	}
+	
 	public String[] getSettings(){
 		try{
 			for (int i = 0; i<textFields.length;++i){

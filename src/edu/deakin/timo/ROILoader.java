@@ -110,7 +110,7 @@ public class ROILoader implements PlugIn {
 		//opener.open(stackPath+"/"+imageName);
 		//String testOpen = "C:\\timo\\research\\BelavyQuittner2015\\stacks\\S001_Spin\\S001_Spin_01_01.dcm";
 		imp = opener.openImage(fileToOpen);
-		PolygonRoi roi = new PolygonRoi(roiCoordinates[0],roiCoordinates[1],roiCoordinates[0].length,Roi.POLYLINE);
+		PolygonRoi roi = new PolygonRoi(roiCoordinates[0],roiCoordinates[1],roiCoordinates[0].length,Roi.POLYGON);//Roi.POLYLINE);
 		imp.setRoi(roi);
 		imp.show();
 		//imp = new ImagePlus(stackPath+"/"+imageName);
