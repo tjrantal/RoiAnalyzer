@@ -4,6 +4,7 @@
 
 package edu.deakin.timo.utils;
 import ij.IJ;
+import edu.deakin.timo.detectEdges.*;
 public class PixelCoordinates{
 	public double[][] coordinates;
 	public double[][] rotatedCoordinates;
@@ -65,7 +66,8 @@ public class PixelCoordinates{
 		@return required rotation angle
 	*/
 	private double getRotationAngle(double[][] coordinates,double[] centreCoordinates){
-		
+		EdgeDetector edge = new EdgeDetector(segmentationMask);
+		Vector<DetectedEdge> edges = edge.edges;
 	
 		double[] coeffs = Utils.polynomialFit(coordinates, 1);
 		return Math.atan(coeffs[1]);	/*The tangent of the rotation angle is coeffs[1]/1*/
