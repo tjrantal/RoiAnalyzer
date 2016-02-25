@@ -72,8 +72,9 @@ public class ROISubregions implements PlugIn {
 		String settings[] = rSettings.getSettings();
 		rSettings.saveSettings();	//Save ROISettings settings
 		
-		int[] subDivisions = new int[]{Integer.parseInt(settings[1]),Integer.parseInt(settings[0])};	/*Get this from a menu, width wise divisions (columns), height wise (rows)*/
-		
+		int[] subDivisions = new int[]{Integer.parseInt(settings[1]),Integer.parseInt(settings[0])};	/*Get this from a menu, width wise divisions 
+(columns), height wise (rows)*/
+		System.out.println("columns "+subDivisions[0]+" rows "+subDivisions[1]);
 		/*Check that an image was open*/
 		if (imp == null) {
             IJ.noImage();

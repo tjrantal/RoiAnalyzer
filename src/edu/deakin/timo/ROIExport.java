@@ -31,9 +31,10 @@ import java.io.*;
  */
 
 public class ROIExport implements PlugIn {
-	
+	ImageWindow imw;
 	/**Implement the PlugIn interface*/
     public void run(String arg) {
+		imw = WindowManager.getCurrentWindow();
         ImagePlus imp = WindowManager.getCurrentImage();
 
 		/*Get save path*/
@@ -98,7 +99,13 @@ public class ROIExport implements PlugIn {
 				}
 			}
 		}
-		//subRegions.saveResults(savePath,imp,visualIP,rMan);	//Save the results to disk		
+		//subRegions.saveResults(savePath,imp,visualIP,rMan);	//Save the results to disk	
+		/*Re-activate the original stack*/
+		imw.toFront();
+		imw.requestFocus();
+		WindowManager.toFront(imw);
+		WindowManager.setWindow(imw); 
+		WindowManager.setCurrentWindow(imw); 		
 	}
 	
 	

@@ -64,18 +64,18 @@ public class SubRegions{
 			tempRotated[1][i] = pc.rotatedCoordinates[i][1];
 			//IJ.log(i+"\t"+ " x "+pc.coordinates[i][0]+" y "+pc.coordinates[i][1]+ " rx "+tempRotated[0][i]+" ry "+tempRotated[1][i]);
 		}
-		//IJ.log("get xMinMax " +tempRotated[0].length);
-		//IJ.log(""+ minInd(tempRotated[0]));
-		//IJ.log(""+ maxInd(tempRotated[0]));
+		IJ.log("get xMinMax " +tempRotated[0].length);
+		IJ.log(""+ minInd(tempRotated[0]));
+		IJ.log(""+ maxInd(tempRotated[0]));
 		xMinMax = new double[]{tempRotated[0][minInd(tempRotated[0])],tempRotated[0][maxInd(tempRotated[0])]};
 		yMinMax = new double[]{tempRotated[1][minInd(tempRotated[1])],tempRotated[1][maxInd(tempRotated[1])]};
 		/**Assign pixels to subregions*/
-		//IJ.log("get subregions");
+		IJ.log("get subregions");
 		subregions = new int[2][];
 		subregions[0]	= assignPixelsToSubregions(tempRotated[0],xMinMax,divisions[0]);
 		subregions[1]	= assignPixelsToSubregions(tempRotated[1],yMinMax,divisions[1]);
 		/**Calculate sub-region results*/
-		//IJ.log("get subregionResults");
+		IJ.log("get subregionResults");
 		getSubregionResults(tempRotated);
 	}
 	
@@ -221,7 +221,9 @@ public class SubRegions{
 		@param tempRotated a 2 x N array with rotated X-, and Y-coordinates
 	*/
 	private void getSubregionResults(double[][] tempRotated){
+		IJ.log("get width");
 		widthWs		= getRegionWidth(tempRotated,new int[]{0,1});
+		IJ.log("get height");
 		heightWs	= getRegionWidth(tempRotated,new int[]{1,0});
 		
 		/*Calculate sub region intensities*/
@@ -263,19 +265,25 @@ public class SubRegions{
 				subRegionAreas[i][j] = (double)regionInts[i][j].size();
 			}
 		}
-		//IJ.log("Subregions");
+		IJ.log("Subregions");
 		/**Calculate subregion heights*/
 		for (int i = 0; i<regionCoords.length;++i){
 			for (int j = 0;j<regionCoords[i].length;++j){
 				//Create temp rotated coordinates comprising just the subregion pixels
 				double[][] tempRotatedRegion = new double[2][regionCoords[i][j].size()];
-				for (int p = 0; p < regionCoords[i][j].size();++p) {
-					tempRotatedRegion[0][p] = regionCoords[i][j].get(p)[0].doubleValue();
-					tempRotatedRegion[1][p] = regionCoords[i][j].get(p)[1].doubleValue();
+				IJ.log("SubregionCoordsSize "+regionCoords[i][j].size());
+				if (regionCoords[i][j].size() > 0){
+					for (int p = 0; p < regionCoords[i][j].size();++p) {
+						tempRotatedRegion[0][p] = regionCoords[i][j].get(p)[0].doubleValue();
+						tempRotatedRegion[1][p] = regionCoords[i][j].get(p)[1].doubleValue();
+					}
+					double temp[] = getRegionWidth(tempRotatedRegion,new int[]{1,0});
+					subRegionHeights[i][j] = temp[1];
+					subRegionWeightedHeights[i][j] = temp[2];
+				}else{
+					subRegionHeights[i][j] = Double.NaN;
+					subRegionWeightedHeights[i][j] = Double.NaN;
 				}
-				double temp[] = getRegionWidth(tempRotatedRegion,new int[]{1,0});
-				subRegionHeights[i][j] = temp[1];
-				subRegionWeightedHeights[i][j] = temp[2];
 			}
 		}
 	}
@@ -292,10 +300,11 @@ public class SubRegions{
 		ArrayList<Double> widths = new ArrayList<Double>();
 		double tempWidth = 0;
 		double pixNum = 0;
+		IJ.log("IN get RegionWidth");
 		xMinMax = new double[]{tempRotated[ind[0]][minInd(tempRotated[ind[0]])],tempRotated[ind[0]][maxInd(tempRotated[ind[0]])]};
 		result[0] = (xMinMax[1]-xMinMax[0])+1d;	/*Max width in pixels*/
 		yMinMax = new double[]{tempRotated[ind[1]][minInd(tempRotated[ind[1]])],tempRotated[ind[1]][maxInd(tempRotated[ind[1]])]};
-		
+		IJ.log("IN get RegionWidth loop");
 		for (int i = (int) Math.round(yMinMax[0]);i<=(int) Math.round(yMinMax[1]);++i){
 			ArrayList<Double> rowData = new ArrayList<Double>();
 			for (int j = 0;j<tempRotated[ind[0]].length;++j){
@@ -312,13 +321,16 @@ public class SubRegions{
 			}
 			
 		}
+		IJ.log("IN get RegionWidth after loop");
 		result[1]=tempWidth/widths.size();	//mean width of rows
 		/*Calculate weighted average for ROI width*/
+		IJ.log("IN get RegionWidth weightedWidths");
 		double weightedWidth = 0;
 		for (int i = 0; i<widths.size();++i){
 			weightedWidth+=widths.get(i)*widths.get(i)/pixNum;
 		}
 		result[2] = weightedWidth;
+		IJ.log("IN get RegionWidth all done");
 		return result;
 	}
 	
