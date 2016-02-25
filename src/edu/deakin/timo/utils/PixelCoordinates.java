@@ -41,7 +41,12 @@ public class PixelCoordinates{
 		}
 		centreCoordinates[0]/=(double)roiPixels;
 		centreCoordinates[1]/=(double)roiPixels;
-		angle = getRotationAngle(coordinates);
+		//Get rotationAngle based on all Roi Pixels
+		//angle = getRotationAngle(coordinates);
+		
+		//Get rotation angle based on top row of pixels
+		angle = getRotationAngleTopRow(coordinates,centreCoordinates);
+		
 		//IJ.log("Angle "+angle/Math.PI*180d);
 		//Calculate rotated coordinates
 		rotatedCoordinates = new double[coordinates.length][2];
@@ -51,6 +56,21 @@ public class PixelCoordinates{
 			rotatedCoordinates[i][1] = temp[1];
 		}
 	}
+	
+	/**
+		Get rotation angle for a ROI to align the top row  with the horizon
+		
+		@param coordinates N x 2 array of ROI pixel coordinates
+		@param centreCoordinates ROI centre coordinates
+		@return required rotation angle
+	*/
+	private double getRotationAngle(double[][] coordinates,double[] centreCoordinates){
+		
+	
+		double[] coeffs = Utils.polynomialFit(coordinates, 1);
+		return Math.atan(coeffs[1]);	/*The tangent of the rotation angle is coeffs[1]/1*/
+	}
+	
 	
 	/**
 		Get rotation angle for a ROI to align the long axis with horizon
