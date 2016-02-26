@@ -13,7 +13,7 @@
 	paths to dependencies, make sure these match....
 	-->
 	<property name="ijPluginPath2" location="D:/timo/software/ImageJ/plugins/jars" /> 
-	<property name="ijPluginPath3" location="c:/timo/research/BelavyIVDisks2014/ImageJ/plugins/jars" /> 
+	
 	<property name="ijPath" location="D:/timo/software/ImageJ" />
 	<property name="imagej" location="${ijPath}/ij.jar" />
 	
@@ -38,7 +38,7 @@
   </target>
 
   <target name="javacompile" depends="init" description="Compile Java source" >
-	<javac source="1.5" target="1.5" srcdir="${javasrc}" destdir="${classes}" nowarn="on">
+	<javac source="6" target="6" srcdir="${javasrc}" destdir="${classes}" nowarn="on">
     <!--<javac source="1.5" srcdir="${javasrc}" destdir="${classes}" nowarn="on">-->
 		<compilerarg line="-Xmaxerrs 10"/>
 		<classpath> 
@@ -62,7 +62,6 @@
 	<jar jarfile="${projectName}.jar" basedir="${classes}"/>
 	<!--Copy the created jar-file to your ij plugins...-->
 	<copy todir="${ijPluginPath2}" file="${projectName}.jar"/>	
-	<copy todir="${ijPluginPath3}" file="${projectName}.jar"/>		
   </target>
   
   <target name="clean" description="Remove output files" >

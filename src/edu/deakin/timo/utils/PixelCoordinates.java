@@ -4,7 +4,9 @@
 
 package edu.deakin.timo.utils;
 import ij.IJ;
-import edu.deakin.timo.detectEdges.*;
+import java.util.*;	//Vector, Collections
+import edu.deakin.timo.detectEdges.EdgeDetector;
+import edu.deakin.timo.detectEdges.DetectedEdge;
 public class PixelCoordinates{
 	public double[][] coordinates;
 	public double[][] rotatedCoordinates;
@@ -46,7 +48,7 @@ public class PixelCoordinates{
 		//angle = getRotationAngle(coordinates);
 		
 		//Get rotation angle based on top row of pixels
-		angle = getRotationAngleTopRow(coordinates,centreCoordinates);
+		angle = getRotationAngleTopRow(centreCoordinates,mask,width,height);
 		
 		//IJ.log("Angle "+angle/Math.PI*180d);
 		//Calculate rotated coordinates
@@ -64,13 +66,27 @@ public class PixelCoordinates{
 		@param coordinates N x 2 array of ROI pixel coordinates
 		@param centreCoordinates ROI centre coordinates
 		@return required rotation angle
+		EdgeDetector
 	*/
-	private double getRotationAngle(double[][] coordinates,double[] centreCoordinates){
-		EdgeDetector edge = new EdgeDetector(segmentationMask);
+	private double getRotationAngleTopRow(double[] centreCoordinates,byte[] mask,int width, int height){
+		IJ.log("Create EdgeDetector");
+		//DetectedEdge test = new DetectedEdge(new Vector<Integer>(),new Vector<Integer>());
+		EdgeDetector edge = new EdgeDetector(mask,width,height);
+		IJ.log("Vector Detected Edge");
+		
+		
+		
 		Vector<DetectedEdge> edges = edge.edges;
-	
+		IJ.log("edges "+edges.size());
+		double[][] corners = getCorners(edges.get(0), centreCoordinates);
+		for (int i = 0;i<corners.length;++i){
+			IJ.log("x "+corners[i][0]+ " y "+corners[i][1]);
+		}
+		return 0d;
+		/*
 		double[] coeffs = Utils.polynomialFit(coordinates, 1);
-		return Math.atan(coeffs[1]);	/*The tangent of the rotation angle is coeffs[1]/1*/
+		return Math.atan(coeffs[1]);	//The tangent of the rotation angle is coeffs[1]/1
+		*/
 	}
 	
 	
@@ -95,5 +111,145 @@ public class PixelCoordinates{
 		rotated[0] = Math.cos(-angle)*vector[0]-Math.sin(-angle)*vector[1];
 		rotated[1] = Math.sin(-angle)*vector[0]+Math.cos(-angle)*vector[1];
 		return rotated;	
+	}
+	
+	
+	/**
+		Determine the corners of the edge. Helper function for getRotationAngleTopRow
+		@param edge The coordinates of the edge for corner detection
+		@param centreCoords, the coordinates of the centre of the ROI the edge belongs to
+		@return corners 4 by 2 array with x-, and y- coordinates of the corners
+	
+	*/
+	public static double[][] getCorners(DetectedEdge edge, double[] centreCoords){
+
+
+		int[][] corners = null;
+		/*Calculate the roi coordinates in polar coordinates*/
+		double r,theta,a,b;
+		Double[][] polar = new Double[edge.iit.size()][4];	/*0 r, 1 theta, 2 x, 3 y*/
+		IJ.log("Get polar coords "+edge.iit.size());
+		for (int i=0; i<edge.iit.size();++i){
+			polar[i][2] = new Double((double) edge.iit.get(i));
+			polar[i][3] = new Double((double) edge.jiit.get(i));
+			a = polar[i][2]-centreCoords[0];
+			b = polar[i][3]-centreCoords[1];
+			r = Math.sqrt(Math.pow(a,2d)+Math.pow(b,2d));
+			theta = Math.atan2(b,a);
+			polar[i][0] = r;
+			polar[i][1] = theta;
+			
+		}
+		/*sort the coordinates, theta 0 = towards right, theta increases clock-wise in ImageJ image (where y increases towards bottom!*/
+		/**Prepare a comparator*/
+		Comparator<Double[]> comparator = new Comparator<Double[]>() {
+			@Override
+			public int compare(Double[] o1, Double[] o2) {
+				return o1[1].compareTo(o2[1]);
+			}
+		};
+		IJ.log("Sort polar coords");
+		Arrays.sort(polar,comparator);	/**Sort the polar coordinates into ascending order according to theta*/
+		/**Look for the four corners, take the maximum r in the four sectors -pi to -pi/2; -pi/2 to 0; 0 to pi/2; pi/2 to pi*/
+		int ind = 0;
+		double[][] polarCorners = new double[4][];
+		IJ.log("Find polar corners");
+		for (int i = 0;i<4;++i){
+			double maxR = -1;
+			double maxTheta = 0;
+			double maxInd = -1;
+			while (ind < polar.length && polar[ind][1] < ((2*Math.PI*((double)i+1d)/4d)-Math.PI)){
+				if (polar[ind][0] > maxR){
+					maxR = polar[ind][0];
+					maxTheta = polar[ind][1];
+					maxInd = ind;
+				}
+				++ind;
+			}
+			polarCorners[i] = new double[]{maxR,maxTheta,maxInd};	
+			IJ.log("found corner "+i+" x "+ polar[(int)polarCorners[i][2]][2] + " y "+polar[(int)polarCorners[i][2]][3]);
+		}
+		return new double[][]{{polar[(int)polarCorners[0][2]][2],polar[(int)polarCorners[0][2]][3]},
+								{polar[(int)polarCorners[1][2]][2],polar[(int)polarCorners[1][2]][3]},
+								{polar[(int)polarCorners[2][2]][2],polar[(int)polarCorners[2][2]][3]},
+								{polar[(int)polarCorners[3][2]][2],polar[(int)polarCorners[3][2]][3]}};
+		/*
+		//Get the points along the edge in between
+		double stepNumber = 5d;
+		double[][] edgePoints = new double[4*((int) stepNumber)][2];
+		ind = -1;
+		for (int i = 0; i<(polarCorners.length-1); ++i){
+			
+			++ind;
+			//Go along the border from previous to next corner, sample three points along the way
+			int initI = (int) polarCorners[i][2];
+			//insert the corner point
+			edgePoints[ind][0] = polar[initI][2];
+			edgePoints[ind][1] = polar[initI][3];
+			
+			int endI = (int) polarCorners[i+1][2];
+			
+			double step = ((double)(endI-initI))/stepNumber;
+			int multiple = 1;
+			IJ.log("Corner "+i+" initI "+initI+" endI "+endI+" r "+edgePoints[ind][0]+" theta "+edgePoints[ind][1]);
+			for (int ii = initI+(int)step;ii<(int) (endI-step/2);ii=initI+((int) (step*(double)multiple))){
+				++ind;
+				++multiple;
+				edgePoints[ind][0] = polar[ii][2];
+				edgePoints[ind][1] = polar[ii][3];
+				//IJ.log("Int Corner "+i+" ind "+ii+" r "+edgePoints[ind][0]+" theta "+edgePoints[ind][1]);
+			}
+			
+		}
+		//The final edge needs to be handled manually due to the discontinuity
+		//Create an array with the indices
+		int initI = (int) polarCorners[polarCorners.length-1][2];
+		int tempEndInd = polar.length-1;
+		int endI = (int) polarCorners[0][2];
+		int[] indiceArray = new int[tempEndInd-initI+1+endI+1];
+		int tI = 0;
+		for (int i = initI;i<polar.length;++i){
+			indiceArray[tI] = i;
+			++tI;
+		}
+		for (int i = 0;i<=endI;++i){
+			indiceArray[tI] = i;
+			++tI;
+		}
+		
+		//add the missing points for the last border
+		initI = 0;
+		//insert the corner point
+		++ind;
+		edgePoints[ind][0] = polar[(int) polarCorners[polarCorners.length-1][2]][2];
+		edgePoints[ind][1] = polar[(int) polarCorners[polarCorners.length-1][2]][3];
+		endI = indiceArray.length-1;
+		double step = ((double)(endI-initI))/stepNumber;
+		//IJ.log("Corner "+i+" ind "+initI+" r "+edgePoints[ind][0]+" theta "+edgePoints[ind][1]);
+		int multiple = 1;
+		for (int ii = initI+(int)step;ii<(int) (endI-step/2);ii=initI+((int) (step*(double)multiple))){
+			++ind;
+			++multiple;
+			edgePoints[ind][0] = polar[indiceArray[ii]][2];
+			edgePoints[ind][1] = polar[indiceArray[ii]][3];
+			//IJ.log("Int Corner "+i+" ind "+ii+" r "+edgePoints[ind][0]+" theta "+edgePoints[ind][1]);
+		}
+		
+		//IJ.log("I length "+indiceArray.length+" I;s added "+tI);
+		
+		
+		//Create the roi polygon
+		int[] xc = new int[edgePoints.length];
+		int[] yc = new int[edgePoints.length];
+		for (int i = 0; i<edgePoints.length;++i){
+			xc[i] = (int) edgePoints[i][0];
+			yc[i] = (int) edgePoints[i][1];
+			IJ.log("XC "+xc[i]+" YC "+yc[i]);
+		}
+		//xc[edgePoints.length] = (int) edgePoints[0][0];
+		//yc[edgePoints.length] = (int) edgePoints[0][1];
+		return new PolygonRoi(new Polygon(xc,yc,xc.length),Roi.POLYGON);
+		*/
+
 	}
 }

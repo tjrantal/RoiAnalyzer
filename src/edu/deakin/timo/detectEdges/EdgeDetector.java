@@ -37,14 +37,31 @@ public class EdgeDetector{
 	byte threshold = 1;
 	public Vector<DetectedEdge> edges;
 	
+	//ImageJ pixels in row-major order, i.e. pixels 0 to width-1 are given first
+	public EdgeDetector(byte[] temp,int w, int h){
+		IJ.log("EDGE DET In array constructor 1");
+		byte[][] temp2 = new byte[w][h];
+		for (int j = 0;j<h;++j){
+			for (int i = 0;i<w;++i){
+				temp2[i][j] = temp[i+j*w];
+			}
+		}
+		detectEdges(temp2);
+	}
+	
+	
 	public EdgeDetector(byte[][] image){
+		IJ.log("EDGE DET In matrix constructor 2");
+		detectEdges(image);
+	}
+	
+	void detectEdges(byte[][] image){
 		this.image = image;
 		width =image.length;
 		height =image[0].length;
-		//IJ.log("w "+width+" h "+height);
+		IJ.log("EDGE DET w "+width+" h "+height);
 		edges = findEdge();	//Trace bone edges	
-	}
-
+	}	
 	/*DetectEdge*/
 	Vector<DetectedEdge> findEdge(){
 		int i,j,tempI,tempJ;
