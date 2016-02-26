@@ -100,7 +100,7 @@ public class ROISubregions implements PlugIn {
 		/**Get ROI mask for the current ROI*/
 		byte[] roiMask = getRoiMask(imp);
 		/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
-		PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height);
+		PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height,Integer.parseInt(settings[8]));
 		
 		subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
 		subRegions.printResults(settings,imp);	//Print the results to a TextPanel
