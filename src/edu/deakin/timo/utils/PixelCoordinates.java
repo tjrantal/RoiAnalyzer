@@ -52,22 +52,35 @@ public class PixelCoordinates{
 			case 0:
 				//Get rotationAngle based on all Roi Pixels
 				pixelsForRotation = coordinates;
+				angle = getRotationAngle(pixelsForRotation);
 				//IJ.log("All");
 				break;
 			case 1:
 				//Get rotation angle based on top row of pixels
 				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
 				pixelsForRotation = sideCoords[0];
+				angle = getRotationAngle(pixelsForRotation);
 				//IJ.log("Top");
 				break;
 			case 2:
 				//Get rotation angle based on bottom row of pixels
 				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
 				pixelsForRotation = sideCoords[2];
+				angle = getRotationAngle(pixelsForRotation);
+				//IJ.log("Bottom");
+				break;
+			case 3:
+				//Get rotation angle based on bottom row of pixels
+				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
+				pixelsForRotation = sideCoords[0];
+				double topAngle = getRotationAngle(pixelsForRotation);
+				pixelsForRotation = sideCoords[2];
+				double bottomAngle = getRotationAngle(pixelsForRotation);
+				angle = (topAngle+bottomAngle)/2d;
 				//IJ.log("Bottom");
 				break;
 		}
-		angle = getRotationAngle(pixelsForRotation);
+		
 		//IJ.log("Angle "+angle);
 			
 		

@@ -1,9 +1,7 @@
 ROIanalyzer plug-in
 
-Features to implement (in the order in which they need to be implemented)
-1) Calculate ROI height, width, and subregion intensities
-	a) rotate ROI to horizontal. Linear fit through roi pixels, and rotate accordingly
-	b) measure width, and 5 horizontal sub-regions
-	
-REFER to 2014_11_12_Image analysis planning.doc for next steps
-	
+Used for Daniel Belavy's Spine Activity project MRI segmentation.
+
+Modify build.xml to suit your development environment, and use ant to build.
+
+Look into html/index.html, and the source code of the plug-ins for use.
