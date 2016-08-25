@@ -4,8 +4,10 @@
 
 package edu.deakin.timo.utils;
 import ij.IJ;
+import ij.gui.NewImage;			/*For creating the output stack images*/
+import ij.ImagePlus;
 import java.util.*;	//Vector, Collections
-import edu.deakin.timo.detectEdges.EdgeDetector;
+import edu.deakin.timo.detectEdges.EdgeDetectorRoiAnalyser;
 import edu.deakin.timo.detectEdges.DetectedEdge;
 public class PixelCoordinates{
 	public double[][] coordinates;
@@ -53,21 +55,21 @@ public class PixelCoordinates{
 				//Get rotationAngle based on all Roi Pixels
 				pixelsForRotation = coordinates;
 				angle = getRotationAngle(pixelsForRotation);
-				//IJ.log("All");
+				////IJ.log("All");
 				break;
 			case 1:
 				//Get rotation angle based on top row of pixels
 				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
 				pixelsForRotation = sideCoords[0];
 				angle = getRotationAngle(pixelsForRotation);
-				//IJ.log("Top");
+				////IJ.log("Top");
 				break;
 			case 2:
 				//Get rotation angle based on bottom row of pixels
 				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
 				pixelsForRotation = sideCoords[2];
 				angle = getRotationAngle(pixelsForRotation);
-				//IJ.log("Bottom");
+				////IJ.log("Bottom");
 				break;
 			case 3:
 				//Get rotation angle based on bottom row of pixels
@@ -77,14 +79,14 @@ public class PixelCoordinates{
 				pixelsForRotation = sideCoords[2];
 				double bottomAngle = getRotationAngle(pixelsForRotation);
 				angle = (topAngle+bottomAngle)/2d;
-				//IJ.log("Bottom");
+				////IJ.log("Bottom");
 				break;
 		}
 		
-		//IJ.log("Angle "+angle);
+		////IJ.log("Angle "+angle);
 			
 		
-		//IJ.log("Angle "+angle/Math.PI*180d);
+		////IJ.log("Angle "+angle/Math.PI*180d);
 		//Calculate rotated coordinates
 		rotatedCoordinates = new double[coordinates.length][2];
 		for (int i = 0;i<coordinates.length;++i){
@@ -103,11 +105,30 @@ public class PixelCoordinates{
 		EdgeDetector
 	*/
 	private double[][][] getRoiSideCoordinates(double[] centreCoordinates,byte[] mask,int width, int height){
-		//IJ.log("Create EdgeDetector");
+		////IJ.log("Create EdgeDetector");
 		//DetectedEdge test = new DetectedEdge(new Vector<Integer>(),new Vector<Integer>());
-		EdgeDetector edge = new EdgeDetector(mask,width,height);
-		//IJ.log("Vector Detected Edge");
+		EdgeDetectorRoiAnalyser edge = new EdgeDetectorRoiAnalyser(mask,width,height);
+		////IJ.log("Vector Detected Edge");
 		Vector<DetectedEdge> edges = edge.edges;
+		
+		//Visualise the mask here
+		/*
+		ImagePlus resultImage = NewImage.createByteImage("Mask visualisation",width,height,1, NewImage.FILL_BLACK);
+		byte[] rPixels = (byte[])resultImage.getProcessor().getPixels();
+		for (int r = 0;r<height;++r){
+			for (int c = 0;c<width;++c){
+				//rPixels[c+r*width] = lbpImage[c][r];
+				rPixels[c+r*width] = mask[c+r*width];
+			}
+		}
+		resultImage.setDisplayRange(0, 1);
+        resultImage.show();
+		
+		//Print edge coordinates
+		for (int i=0; i<edges.get(0).iit.size();++i){
+			//IJ.log("edge x "+edges.get(0).iit.get(i)+" y "+edges.get(0).jiit.get(i));
+		}
+		*/
 		return getSidePixels(edges.get(0), centreCoordinates);	//The tangent of the rotation angle is coeffs[1]/1
 	}
 	
@@ -150,7 +171,7 @@ public class PixelCoordinates{
 		/*Calculate the roi coordinates in polar coordinates*/
 		double r,theta,a,b;
 		Double[][] polar = new Double[edge.iit.size()][4];	/*0 r, 1 theta, 2 x, 3 y*/
-		//IJ.log("Get polar coords "+edge.iit.size());
+		////IJ.log("Get polar coords "+edge.iit.size());
 		for (int i=0; i<edge.iit.size();++i){
 			polar[i][2] = new Double((double) edge.iit.get(i));
 			polar[i][3] = new Double((double) edge.jiit.get(i));
@@ -175,12 +196,16 @@ public class PixelCoordinates{
 		/**Look for the four corners, take the maximum r in the four sectors -pi to -pi/2; -pi/2 to 0; 0 to pi/2; pi/2 to pi*/
 		int ind = 0;
 		double[][] polarCorners = new double[4][];
-		//IJ.log("Find polar corners");
+		////IJ.log("Find polar corners "+(polar[ind][1]/Math.PI*180d));
 		for (int i = 0;i<4;++i){
-			double maxR = -1;
+			//IJ.log("Start corner "+i+" theta "+(polar[ind][1]/Math.PI*180d));
+			double maxR = Double.NEGATIVE_INFINITY;
 			double maxTheta = 0;
 			double maxInd = -1;
 			while (ind < polar.length && polar[ind][1] < ((2*Math.PI*((double)i+1d)/4d)-Math.PI)){
+				//if (i ==3){
+					////IJ.log("Current ind "+ind+" theta "+(polar[ind][1]/Math.PI*180d)+" r "+polar[ind][0]); 
+				//}
 				if (polar[ind][0] > maxR){
 					maxR = polar[ind][0];
 					maxTheta = polar[ind][1];
@@ -188,6 +213,7 @@ public class PixelCoordinates{
 				}
 				++ind;
 			}
+			//IJ.log("found corner "+i+" maxInd "+maxInd+" current ind "+ind+" of "+polar.length);
 			polarCorners[i] = new double[]{maxR,maxTheta,maxInd};	
 			//IJ.log("found corner "+i+" x "+ polar[(int)polarCorners[i][2]][2] + " y "+polar[(int)polarCorners[i][2]][3]);
 		}

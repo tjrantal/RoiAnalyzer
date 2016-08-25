@@ -28,7 +28,7 @@ import ij.text.*; 	//Debugging ...
 import ij.process.*;	//Debugging
 
 @SuppressWarnings(value ={"serial","unchecked"}) //Unchecked for cloning Vector<Integer>
-public class EdgeDetector{
+public class EdgeDetectorRoiAnalyser{
 
 
 	private int height;
@@ -38,8 +38,8 @@ public class EdgeDetector{
 	public Vector<DetectedEdge> edges;
 	
 	//ImageJ pixels in row-major order, i.e. pixels 0 to width-1 are given first
-	public EdgeDetector(byte[] temp,int w, int h){
-		IJ.log("EDGE DET temp,w,h");
+	public EdgeDetectorRoiAnalyser(byte[] temp,int w, int h){
+		//IJ.log("EDGE DET temp,w,h");
 		byte[][] temp2 = new byte[w][h];
 		for (int j = 0;j<h;++j){
 			for (int i = 0;i<w;++i){
@@ -50,8 +50,8 @@ public class EdgeDetector{
 	}
 	
 	
-	public EdgeDetector(byte[][] image){
-		//IJ.log("EDGE DET In matrix constructor 2");
+	public EdgeDetectorRoiAnalyser(byte[][] image){
+		////IJ.log("EDGE DET In matrix constructor 2");
 		detectEdges(image);
 	}
 	
@@ -59,7 +59,7 @@ public class EdgeDetector{
 		this.image = image;
 		width =image.length;
 		height =image[0].length;
-		IJ.log("EDGE DET w "+width+" h "+height);
+		//IJ.log("EDGE DET w "+width+" h "+height);
 		edges = findEdge();	//Trace bone edges	
 	}	
 	/*DetectEdge*/
@@ -93,7 +93,7 @@ public class EdgeDetector{
 			}
 			tempI = i;
 			tempJ = j;
-			//IJ.log("found Init");
+			////IJ.log("found Init");
 			if (i >= width-1 && j >= height-1){
 				break;	/*Go to end...*/
 			}
@@ -131,7 +131,7 @@ public class EdgeDetector{
 			
 			/**Go through cleaved edges, and fill result edges*/
 			//System.out.println("Fill edges "+cleavedEdges.size());
-			IJ.log("Fill edges "+cleavedEdges.size());
+			//IJ.log("Fill edges "+cleavedEdges.size());
 			for (int c = 0; c<cleavedEdges.size();++c){
 				/**Trace the edge in the mask*/
 				for (int e =0; e<cleavedEdges.get(c).iit.size();++e){

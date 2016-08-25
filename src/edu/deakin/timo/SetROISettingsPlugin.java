@@ -44,9 +44,17 @@ public class SetROISettingsPlugin implements PlugIn {
 				rSettings = new ROISettings();	//Should never get here!
 			}
 		}
+		
+		String[] values = new String[2];
+		values[0] = gd.getNextString();
+		values[1] = gd.getNextString();
+		
+		//IJ.log(values[0]);
+		//IJ.log(values[1]);
+		
 		rSettings.setVisible(true);
-		rSettings.setTextField("ROI to read",gd.getNextString());
-		rSettings.setTextField("Stack path",gd.getNextString());
+		rSettings.setTextField("ROI to read",values[0]);
+		rSettings.setTextField("Stack path",values[1]);
 		String settings[] = rSettings.getSettings();
 		rSettings.saveSettings();	//Save ROISettings settings
 	
