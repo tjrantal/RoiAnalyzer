@@ -91,11 +91,8 @@ public class ROISubregions implements PlugIn {
 		int height = imp.getHeight();
 		depth = imp.getStackSize();
 		int currentSlice =imp.getSlice();
-
 		
 		SubRegions subRegions	= null;
-
-		
 		
 		/**Get ROI mask for the current ROI*/
 		byte[] roiMask = getRoiMask(imp);
@@ -160,7 +157,7 @@ public class ROISubregions implements PlugIn {
 		int depth = imp.getStackSize();
 		byte[] roiMask = new byte[width*height];	/*Automatically initialized to zero*/
 		Roi ijROI = imp.getRoi();	//Get the current ROI
-		Rectangle rect = ijROI.getBoundingRect();
+		Rectangle rect = ijROI.getBounds();
 		
 		/*Create ROI mask*/
 		if (imp.getMask() != null){

@@ -64,6 +64,8 @@ public class ROILoader implements PlugIn {
 		//Read ROI file
 		String roiPath = settings[6];	//Roi file path
 		String stackPath = settings[7];	//image stack path
+		//Get whether to erode ROI from settings
+		int erodeByPixels = Integer.parseInt(settings[9]);
 		int[][] roiCoordinates;
 		try{
 			//IJ.log("BufferedReader");
@@ -111,6 +113,12 @@ public class ROILoader implements PlugIn {
 		//String testOpen = "C:\\timo\\research\\BelavyQuittner2015\\stacks\\S001_Spin\\S001_Spin_01_01.dcm";
 		imp = opener.openImage(fileToOpen);
 		PolygonRoi roi = new PolygonRoi(roiCoordinates[0],roiCoordinates[1],roiCoordinates[0].length,Roi.POLYGON);//Roi.POLYLINE);
+		
+		//Erode ROI, if erodeByPixels is not zero
+		if (erodeByPixels != 0){
+			roi = RoiEnlarger.enlarge(roi, (double) (-erodeByPixels));
+		}
+
 		imp.setRoi(roi);
 		imp.show();
 		//imp = new ImagePlus(stackPath+"/"+imageName);
