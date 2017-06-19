@@ -72,14 +72,18 @@ public class PixelCoordinates{
 				////IJ.log("Bottom");
 				break;
 			case 3:
-				//Get rotation angle based on bottom row of pixels
+				//Get rotation angle based on top and bottom row of pixels
 				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
 				pixelsForRotation = sideCoords[0];
 				double topAngle = getRotationAngle(pixelsForRotation);
 				pixelsForRotation = sideCoords[2];
 				double bottomAngle = getRotationAngle(pixelsForRotation);
 				angle = (topAngle+bottomAngle)/2d;
-				////IJ.log("Bottom");
+				////IJ.log("Bottom and Top");
+			case 4:
+				//Set rotation to zero
+				angle = 0d;
+				//IJ.log("No rotation");
 				break;
 		}
 		
