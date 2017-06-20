@@ -39,6 +39,7 @@ public class SubRegions{
 	public double[][] subRegionIntensities;	 
 	public double[][] subRegionAreas;
 	public double[][] subRegionHeights;
+	public double[][] subRegionWidths;
 	public double[][] subRegionWeightedHeights;
 	
 	/**
@@ -151,6 +152,15 @@ public class SubRegions{
 				headerString+="Region r "+j+" c "+i+" weighted height ["+calib.getUnit()+"]\t";
 			}
 		}
+		
+		if (Integer.parseInt(settings[10]) > 0){
+			for (int j = 0;j<subRegionWidths[0].length;++j){
+				for (int i = 0;i<subRegionWidths.length;++i){
+					headerString+="Region r "+j+" c "+i+" width ["+calib.getUnit()+"]\t";
+				}
+			}
+		}
+		
 			
 		/*Add header if missing*/
 		if (textPanel.getLineCount() == 0){		
@@ -192,6 +202,13 @@ public class SubRegions{
 		for (int j = 0;j<subRegionWeightedHeights[0].length;++j){
 			for (int i = 0;i<subRegionWeightedHeights.length;++i){
 				resString += (subRegionWeightedHeights[i][j]*heightScale)+"\t";
+			}
+		}
+		if (Integer.parseInt(settings[10]) > 0){
+			for (int j = 0;j<subRegionWidths[0].length;++j){
+				for (int i = 0;i<subRegionWidths.length;++i){
+					resString += (subRegionWidths[i][j]*widthScale)+"\t";
+				}
 			}
 		}
 		//public double[][] subRegionAreas;
@@ -256,6 +273,7 @@ public class SubRegions{
 		subRegionAreas			= new double[divisions[0]][divisions[1]];
 		subRegionHeights		= new double[divisions[0]][divisions[1]];		
 		subRegionWeightedHeights	= new double[divisions[0]][divisions[1]];
+		subRegionWidths			= new double[divisions[0]][divisions[1]];		
 		for (int i = 0; i<regionInts.length;++i){
 			for (int j = 0;j<regionInts[i].length;++j){
 				for (int p = 0; p < regionInts[i][j].size();++p) {
@@ -277,12 +295,15 @@ public class SubRegions{
 						tempRotatedRegion[0][p] = regionCoords[i][j].get(p)[0].doubleValue();
 						tempRotatedRegion[1][p] = regionCoords[i][j].get(p)[1].doubleValue();
 					}
-					double temp[] = getRegionWidth(tempRotatedRegion,new int[]{1,0});
+					double[] temp = getRegionWidth(tempRotatedRegion,new int[]{1,0});
 					subRegionHeights[i][j] = temp[1];
 					subRegionWeightedHeights[i][j] = temp[2];
+					temp = getRegionWidth(tempRotatedRegion,new int[]{0,1});
+					subRegionWidths [i][j] = temp[1];
 				}else{
 					subRegionHeights[i][j] = Double.NaN;
 					subRegionWeightedHeights[i][j] = Double.NaN;
+					subRegionWidths [i][j] = Double.NaN;
 				}
 			}
 		}

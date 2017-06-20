@@ -116,7 +116,7 @@ public class ROILoader implements PlugIn {
 		
 		//Erode ROI, if erodeByPixels is not zero
 		if (erodeByPixels != 0){
-			roi = RoiEnlarger.enlarge(roi, (double) (-erodeByPixels));
+			roi = (PolygonRoi) RoiEnlarger.enlarge(roi, (double) (-erodeByPixels));
 		}
 
 		imp.setRoi(roi);
