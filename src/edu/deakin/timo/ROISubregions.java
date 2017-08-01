@@ -82,8 +82,12 @@ public class ROISubregions implements PlugIn {
         }
 		/*Check that the image is 16 bit gray image*/
 		if (imp.getType() != ImagePlus.GRAY16){
-			IJ.error("IJGrower expects 16-bit greyscale data, e.g. DICOM-image");
-			return;
+			//Convert the image to 16bit do not warn the user
+			new ImageConverter(imp).convertToGray16();
+			
+			
+			//IJ.error("IJGrower expects 16-bit greyscale data, e.g. DICOM-image");
+			//return;
 		}
 		
 		/*Get image size and stack depth*/
