@@ -25,7 +25,13 @@ import javax.swing.JFileChooser;
 import java.util.prefs.Preferences;		/*Saving the file save path -> no need to re-browse...*/
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
+//Ellipse fit
+import timo.deakin.ellipsefit.EllipseFit;
+import timo.deakin.ellipsefit.NormalPoint;
+import java.awt.Polygon;
+import java.awt.Color;
 /*
  Performs connected region growing. User is asked to provide the seed area points.
  Result is displayed as a binary image. Works with 3D images stack.
@@ -42,6 +48,7 @@ public class ROISubregions implements PlugIn {
 	private Preferences preferences;		/**Saving the default file path*/
 	private final String keySP = "SP";
 	private String savePath;
+	ArrayList<Coordinate> coordinates;
 
 	/**Implement the PlugIn interface*/
     public void run(String arg) {
@@ -99,18 +106,61 @@ public class ROISubregions implements PlugIn {
 		SubRegions subRegions	= null;
 		
 		/**Get ROI mask for the current ROI*/
-		byte[] roiMask = getRoiMask(imp);
-		/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
-		PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height,Integer.parseInt(settings[8]));
 		
-		subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
-		subRegions.printResults(settings,imp);	//Print the results to a TextPanel
-		/**Get the visualization stack*/
-		if (Double.parseDouble(settings[5]) >= 1){
-			ImagePlus visualIP		= null;
-			visualIP = getVisualizationSlice(imp);
-			/*Color the subregions to visualize the division*/
-			visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
+		
+		coordinates = new ArrayList<Coordinate>();
+		byte[] roiMask = getRoiMask(imp);
+		/**Do not do subregions, if using ellipse fit, settings 11 = 1*/
+		double tolerance = Double.parseDouble(settings[11]);
+		if (tolerance == 0d){
+			/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
+			PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height,Integer.parseInt(settings[8]));
+			subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
+			subRegions.printResults(settings,imp);	//Print the results to a TextPanel
+			/**Get the visualization stack*/
+			if (Double.parseDouble(settings[5]) >= 1){
+				ImagePlus visualIP		= null;
+				visualIP = getVisualizationSlice(imp);
+				/*Color the subregions to visualize the division*/
+				visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
+			}
+		}else{
+			//USING ELLIPSE FIT!!!
+			//Pop digitized coordinates into coordinates
+			Roi temp = imp.getRoi();
+			if (temp instanceof PolygonRoi){
+				FloatPolygon tempP = ((PolygonRoi) temp).getFloatPolygon();
+				coordinates.clear();
+				for (int i = 0; i<tempP.npoints;++i){
+					coordinates.add(new Coordinate(tempP.xpoints[i],tempP.ypoints[i]));
+				}
+				
+			}
+			IJ.log("Using ellipse fit "+coordinates.size());
+			EllipseFit ef = new EllipseFit(coordinates,tolerance);
+			double[] coeffs = ef.getCoeffs();
+			//Get fit
+			NormalPoint[] nPoints = new NormalPoint[coordinates.size()];
+			FloatPolygon fp = new FloatPolygon();
+			for (int i = 0; i<coordinates.size();++i){
+				nPoints[i] = ef.getNormalPoint(coordinates.get(i));
+				fp.addPoint(nPoints[i].x,nPoints[i].y);
+			}
+			
+			//ij.gui.PolygonRoi https://imagej.nih.gov/ij/developer/api/ij/gui/PolygonRoi.html
+			//https://imagej.nih.gov/ij/developer/api/ij/gui/Overlay.html
+			Overlay ol = imp.getOverlay();
+			if (ol == null){
+				ol = new Overlay();
+			}
+			ol.clear();
+			PolygonRoi pr = new PolygonRoi(fp,Roi.POLYLINE);
+			pr.setColor(Color.RED);
+			ol.add(pr);
+			imp.setOverlay(ol);
+			imp.draw();
+			IJ.log("Got fit "+String.format("%.1f %.1f %.1f %.1f",coeffs[0],coeffs[1],coeffs[2],coeffs[3]));
+			
 		}
 		
 		/*Re-activate the original stack*/
@@ -171,6 +221,7 @@ public class ROISubregions implements PlugIn {
 				for (int i = rect.x; i < rect.x+rect.width;++i){
 					if (tempMask[i-rect.x+(j-rect.y)*rect.width] !=0){
 						roiMask[i+j*width] =1;	/*In ROI = 1, out = 0*/
+						coordinates.add(new Coordinate(i,j));	//Add ROI coordinates into coordinates ArrayList
 					}
 				}
 			}
@@ -179,6 +230,7 @@ public class ROISubregions implements PlugIn {
 			for (int j = rect.y;j< rect.y+rect.height;++j){
 				for (int i = rect.x; i < rect.x+rect.width;++i){
 					roiMask[i+j*width] =1;	/*In ROI = 1, out = 0*/
+					coordinates.add(new Coordinate(i,j));	//Add ROI coordinates into coordinates ArrayList
 				}
 			}
 		}
