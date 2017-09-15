@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 //Ellipse fit
+import timo.deakin.ellipsefit.PolyFit;
 import timo.deakin.ellipsefit.EllipseFit;
 import timo.deakin.ellipsefit.NormalPoint;
 import java.awt.Polygon;
@@ -128,16 +129,22 @@ public class ROISubregions implements PlugIn {
 			//USING ELLIPSE FIT!!!
 			//Pop digitized coordinates into coordinates
 			Roi temp = imp.getRoi();
+			ArrayList<Coordinate> digitizedCoordinates = new ArrayList<Coordinate>();
 			if (temp instanceof PolygonRoi){
 				FloatPolygon tempP = ((PolygonRoi) temp).getFloatPolygon();
-				coordinates.clear();
+				digitizedCoordinates.clear();
 				for (int i = 0; i<tempP.npoints;++i){
-					coordinates.add(new Coordinate(tempP.xpoints[i],tempP.ypoints[i]));
+					digitizedCoordinates.add(new Coordinate(tempP.xpoints[i],tempP.ypoints[i]));
 				}
 				
+				
 			}
+			
+			//Fit an n:th order polynomial with the least squares method
+			
 			IJ.log("Using ellipse fit "+coordinates.size());
-			EllipseFit ef = new EllipseFit(coordinates,tolerance);
+			//EllipseFit ef = new EllipseFit(coordinates,tolerance);
+			PolyFit ef = new PolyFit(coordinates,2);
 			double[] coeffs = ef.getCoeffs();
 			//Get fit
 			NormalPoint[] nPoints = new NormalPoint[coordinates.size()];
