@@ -112,8 +112,8 @@ public class ROISubregions implements PlugIn {
 		coordinates = new ArrayList<Coordinate>();
 		byte[] roiMask = getRoiMask(imp);
 		/**Do not do subregions, if using ellipse fit, settings 11 = 1*/
-		double tolerance = Double.parseDouble(settings[11]);
-		if (tolerance == 0d){
+		int fitOrder = Integer.parseInt(settings[11]);
+		if (fitOrder == 0){
 			/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
 			PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height,Integer.parseInt(settings[8]));
 			subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
@@ -144,16 +144,24 @@ public class ROISubregions implements PlugIn {
 			
 			IJ.log("Using ellipse fit "+coordinates.size());
 			//EllipseFit ef = new EllipseFit(coordinates,tolerance);
-			PolyFit ef = new PolyFit(coordinates,2);
-			double[] coeffs = ef.getCoeffs();
-			//Get fit
-			NormalPoint[] nPoints = new NormalPoint[coordinates.size()];
-			FloatPolygon fp = new FloatPolygon();
-			for (int i = 0; i<coordinates.size();++i){
-				nPoints[i] = ef.getNormalPoint(coordinates.get(i));
-				fp.addPoint(nPoints[i].x,nPoints[i].y);
-			}
+			PolyFit pf = new PolyFit(coordinates,fitOrder);
+			double[] coeffs = pf.getCoeffs();	//Get fit
+			double[] dCoeffs = pf.getDerivCoeffs();	//Get derivative coefficients (-1/dCoeffs = normals)
 			
+			//DEBUGGING
+			String coeffsString = "";
+			String dCoeffsString = "";
+			for (int i = 0; i< coeffs.length;++i){
+				coeffsString+=String.format(" C%d %.2f",i,coeffs[i]);
+				if (i<dCoeffs.length){
+					dCoeffsString+=String.format(" dC%d %.2f",i,dCoeffs[i]);
+				}
+			}
+			IJ.log(coeffsString);
+			IJ.log(dCoeffsString);
+			
+			
+			//Visualise fit
 			//ij.gui.PolygonRoi https://imagej.nih.gov/ij/developer/api/ij/gui/PolygonRoi.html
 			//https://imagej.nih.gov/ij/developer/api/ij/gui/Overlay.html
 			Overlay ol = imp.getOverlay();
@@ -161,12 +169,55 @@ public class ROISubregions implements PlugIn {
 				ol = new Overlay();
 			}
 			ol.clear();
+
+			
+			NormalPoint[] nPoints = new NormalPoint[digitizedCoordinates.size()];
+			FloatPolygon fp = new FloatPolygon();
+			for (int i = 0; i<digitizedCoordinates.size();++i){
+				nPoints[i] = pf.getFitPoint(digitizedCoordinates.get(i),true);
+				fp.addPoint(nPoints[i].x,nPoints[i].y);
+				
+				//Add tangent lines to the overlay
+				double xTangentSlope = 0;
+				
+				double tempY =nPoints[i].y;
+				for (int d = 0; d<dCoeffs.length;++d){
+					xTangentSlope+=dCoeffs[d]*Math.pow(tempY,(double) d);
+				}
+				double xNormalSlope = -1d/xTangentSlope;
+				
+				double[] tangentUnit = PolyFit.normalise(new double[]{xTangentSlope,1d}); 
+				
+				//Rotate the tangent clockwise (y points down!!! -> positive rads
+				double[] unitNormal = new double[]{-tangentUnit[1],tangentUnit[0]};
+				
+				//double[] unitNormal = PolyFit.normalise(new double[]{xNormalSlope,1d}); 
+				
+				
+				double[] normalIndicator = new double[]{unitNormal[0]*10d,unitNormal[1]*10d};
+				IJ.log("Coords x "+nPoints[i].x+" y "+tempY+" xslope "+xTangentSlope);
+				FloatPolygon lfp = new FloatPolygon();
+				lfp.addPoint(nPoints[i].x,tempY);
+				lfp.addPoint(nPoints[i].x+normalIndicator[0],tempY+normalIndicator[1]);
+				PolygonRoi lpr = new PolygonRoi(lfp,Roi.POLYLINE);
+				lpr.setColor(Color.GREEN);
+				ol.add(lpr);
+				
+				/*
+				Line oLine = new Line(nPoints[i].x,nPoints[i].x+xTangentSlope,tempY,tempY+1d);
+				oLine.setColor(Color.GREEN);
+				ol.add(oLine);
+				*/
+			}
+			
+			/*
 			PolygonRoi pr = new PolygonRoi(fp,Roi.POLYLINE);
 			pr.setColor(Color.RED);
 			ol.add(pr);
+			*/
 			imp.setOverlay(ol);
 			imp.draw();
-			IJ.log("Got fit "+String.format("%.1f %.1f %.1f %.1f",coeffs[0],coeffs[1],coeffs[2],coeffs[3]));
+			//IJ.log("Got fit "+String.format("%.1f %.1f %.1f %.1f",coeffs[0],coeffs[1],coeffs[2],coeffs[3]));
 			
 		}
 		

@@ -13,6 +13,7 @@ public class PolyFit {
 	private double[][] observedPoints;
 	
 	private double[] coeffs;
+	private double[] derivCoeffs;
 	private int fitOrder = 2; //Polynomial fit order
 	
 	double tolerance = 1e-6;
@@ -73,12 +74,56 @@ public class PolyFit {
 				observedPoints[i][j] = a[i][j];
 			}
 		}
-		this.coeffs = calcFit();	
+		this.coeffs = calcFit();
+		//Calculate derivative coefficients
+		derivCoeffs = new double[coeffs.length-1];
+		for (int i = 1; i<coeffs.length;++i){
+			//derivCoeffs[i-1] = coeffs[i]*(((double) i)+1d);
+			derivCoeffs[i-1] = coeffs[i]*((double) i);
+		}
+		
 	}
 	
 	public void setFitOrder(int fitOrder){
 		this.fitOrder = fitOrder;
 	}
+	
+
+	
+	public NormalPoint getFitPoint(Coordinate point, boolean flip){
+		return getFitPoint(new double[]{point.x,point.y},flip);
+	}
+	
+	/**
+		Get a point on the ellipse that has a normal that passes through a particular point
+		The point on the ellipse is found iteratively by exploring the angle between vectors from the point not on the ellipse to a point on the ellipse
+		, and the normal from the point on the ellipse. Initially the point on the ellipse is identified as the intersection of a line from the origin 
+		of the ellipse to the circumference of the ellipse.
+		
+		Depends on apache commmons math for dot product and determinant
+		
+		@param point the point which we find a point on the ellipse that has a normal that joins the point and the ellipse
+		@returns NormalPoint coordinates of the point on the ellipse,corresponding polar coordinate theta, corresponding polar coordinate theta mapped from 0 to 2*pi, and distance from the point to the point on the ellipse
+	*/
+	public NormalPoint getFitPoint(double[] point, boolean flip){
+		int[] indices;
+		double[] returnVal = new double[2];
+		if (flip){
+			indices = new int[]{1,0};
+		}else{
+			indices = new int[]{0,1};
+		}
+		returnVal[indices[0]] = point[indices[0]];
+		returnVal[indices[1]] = 0;
+		for (int i = 0; i<coeffs.length;++i){
+			returnVal[indices[1]] += coeffs[i]*Math.pow(returnVal[indices[0]],(double) i);
+		}
+		
+		
+		return new NormalPoint(returnVal[0],returnVal[1],-1d,-1d,Math.sqrt(Math.pow(returnVal[0]-point[0],2d)+Math.pow(returnVal[1]-point[1],2d)));
+	}
+	
+	
 	
 	public NormalPoint getNormalPoint(Coordinate point){
 		return getNormalPoint(new double[]{point.x,point.y});
@@ -159,7 +204,7 @@ public class PolyFit {
 	/**
 		Normalise the 1D array into a unit vector
 	*/
-	private static double[] normalise(double[] a){
+	public static double[] normalise(double[] a){
 		double n = getNorm(a);
 		double[] b = new double[a.length];
 		for (int i = 0; i<a.length;++i){
@@ -204,6 +249,10 @@ public class PolyFit {
 	public double[] getCoeffs(){
 		return coeffs;
 	}
+	
+	public double[] getDerivCoeffs(){
+		return derivCoeffs;
+	}	
 	
 	/**
 		Calculate row means
