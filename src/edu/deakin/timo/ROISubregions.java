@@ -219,66 +219,39 @@ public class ROISubregions implements PlugIn {
 				currentTarget += 1d;
 			}
 			
-			
-			//Create the flattened image by using the step coordinates as the starting points
-			//Visualise fit
-			//ij.gui.PolygonRoi https://imagej.nih.gov/ij/developer/api/ij/gui/PolygonRoi.html
-			//https://imagej.nih.gov/ij/developer/api/ij/gui/Overlay.html
-			Overlay ol = imp.getOverlay();
-			if (ol == null){
-				ol = new Overlay();
-			}
-			ol.clear();
-
-			
-			NormalPoint[] nPoints = new NormalPoint[flattenCoordinates.size()];
-			FloatPolygon fp = new FloatPolygon();
+			//Loop through flattenCoordinates and interpolate pixels
+			int flatWidth = flattenCoordinates.size();
+			int flatHeight = (maxDistance*2+1);
+			short[] pixels = new short[flatWidth*flatHeight];	//Pixels for flattened image
+			byte[] maskPixels = new byte[flatWidth*flatHeight];	//Pixels for flattened mask
+			double xTangentSlope;
+			ImageProcessor ip = imp.getProcessor();
+			//Create roi mask processor
+			ByteProcessor bpro = new ByteProcessor(width,height);
+			bpro.setPixels(roiMask);			
 			for (int i = 0; i<flattenCoordinates.size();++i){
-				nPoints[i] = pf.getFitPoint(flattenCoordinates.get(i),true);
-				fp.addPoint(nPoints[i].x,nPoints[i].y);
-				
-				//Add tangent lines to the overlay
-				double xTangentSlope = 0;
-				
-				double tempY =nPoints[i].y;
-				for (int d = 0; d<dCoeffs.length;++d){
-					xTangentSlope+=dCoeffs[d]*Math.pow(tempY,(double) d);
+				xTangentSlope= getFitVal(dCoeffs,flattenCoordinates.get(i).y);
+				double[] tangentUnit = PolyFit.normalise(new double[]{xTangentSlope,1d});	//Get unit tangent vector
+				double[] unitNormal = new double[]{-tangentUnit[1],tangentUnit[0]};  //Rotate the tangent clockwise by 90 deg (y points down!!!), unit normal
+				//Get point along the unitNormal
+				double cX = flattenCoordinates.get(i).x;
+				double cY = flattenCoordinates.get(i).y;
+				for (int j = 0;j< flatHeight; ++j){
+					pixels[i+j*flatWidth] = (short) ip.getInterpolatedPixel(cX+unitNormal[0]*(j-((double) maxDistance)), cY+unitNormal[1]*(j-((double) maxDistance)));
+					maskPixels[i+j*flatWidth] = (byte) bpro.getInterpolatedPixel(cX+unitNormal[0]*(j-((double) maxDistance)), cY+unitNormal[1]*(j-((double) maxDistance)));
 				}
-				//double xNormalSlope = -1d/xTangentSlope;
-				
-				double[] tangentUnit = PolyFit.normalise(new double[]{xTangentSlope,1d}); 
-				
-				//Rotate the tangent clockwise (y points down!!! -> positive rads
-				//JATKA TASTA, tee uusi kuva y min -10 to y max + 10, +-max length of point from fit along the normal
-				double[] unitNormal = new double[]{-tangentUnit[1],tangentUnit[0]};
-				
-				//double[] unitNormal = PolyFit.normalise(new double[]{xNormalSlope,1d}); 
-				
-				
-				double[] normalIndicator = new double[]{unitNormal[0]*10d,unitNormal[1]*10d};
-				//IJ.log("Coords x "+nPoints[i].x+" y "+tempY+" xslope "+xTangentSlope);
-				FloatPolygon lfp = new FloatPolygon();
-				lfp.addPoint(nPoints[i].x,tempY);
-				lfp.addPoint(nPoints[i].x+normalIndicator[0],tempY+normalIndicator[1]);
-				PolygonRoi lpr = new PolygonRoi(lfp,Roi.POLYLINE);
-				lpr.setColor(Color.GREEN);
-				ol.add(lpr);
-				
-				/*
-				Line oLine = new Line(nPoints[i].x,nPoints[i].x+xTangentSlope,tempY,tempY+1d);
-				oLine.setColor(Color.GREEN);
-				ol.add(oLine);
-				*/
 			}
+			ShortProcessor fpro = new ShortProcessor(flatWidth,flatHeight);
+			fpro.setPixels(pixels);
+			ImagePlus flattenedIP = new ImagePlus("Flattened",fpro);
+			flattenedIP.show();
 			
-			/*
-			PolygonRoi pr = new PolygonRoi(fp,Roi.POLYLINE);
-			pr.setColor(Color.RED);
-			ol.add(pr);
-			*/
-			imp.setOverlay(ol);
-			imp.draw();
-			//IJ.log("Got fit "+String.format("%.1f %.1f %.1f %.1f",coeffs[0],coeffs[1],coeffs[2],coeffs[3]));
+			ByteProcessor bfpro = new ByteProcessor(flatWidth,flatHeight);
+			bfpro.setPixels(maskPixels);			
+			ImagePlus maskIP = new ImagePlus("Mask",bfpro);
+			maskIP.setDisplayRange(0,1);
+			maskIP.show();
+			
 			
 		}
 		
