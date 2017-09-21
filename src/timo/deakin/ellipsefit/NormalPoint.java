@@ -4,7 +4,7 @@ package timo.deakin.ellipsefit;
 import Jama.Matrix;
 import timo.deakin.ellipsefit.nonlinlsqoptim.EllipseOptimAlgorithm;
 
-public class NormalPoint{
+public class NormalPoint implements Comparable<NormalPoint>{
 	public double x;
 	public double y;
 	public double theta;
@@ -17,5 +17,15 @@ public class NormalPoint{
 		this.thetaMapped = thetaMapped;
 		this.distance = distance;
 	}
+	
+
+	/*
+		Implement Comparable
+		For Ascending order
+	*/
+	@Override
+    public int compareTo(NormalPoint a) {
+		return this.distance <= a.distance ?  -1: 1; //which is larger
+    }
 	
 }

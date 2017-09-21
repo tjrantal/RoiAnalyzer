@@ -26,6 +26,7 @@ import java.util.prefs.Preferences;		/*Saving the file save path -> no need to r
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;		//Sorting
 
 //Ellipse fit
 import timo.deakin.ellipsefit.PolyFit;
@@ -126,7 +127,7 @@ public class ROISubregions implements PlugIn {
 				visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
 			}
 		}else{
-			//USING ELLIPSE FIT!!!
+			//USING Polynomial FIT!!!
 			//Pop digitized coordinates into coordinates
 			Roi temp = imp.getRoi();
 			ArrayList<Coordinate> digitizedCoordinates = new ArrayList<Coordinate>();
@@ -142,13 +143,14 @@ public class ROISubregions implements PlugIn {
 			
 			//Fit an n:th order polynomial with the least squares method
 			
-			IJ.log("Using ellipse fit "+coordinates.size());
+			//IJ.log("Using ellipse fit "+coordinates.size());
 			//EllipseFit ef = new EllipseFit(coordinates,tolerance);
 			PolyFit pf = new PolyFit(coordinates,fitOrder);
 			double[] coeffs = pf.getCoeffs();	//Get fit
 			double[] dCoeffs = pf.getDerivCoeffs();	//Get derivative coefficients (-1/dCoeffs = normals)
 			
 			//DEBUGGING
+			/*
 			String coeffsString = "";
 			String dCoeffsString = "";
 			for (int i = 0; i< coeffs.length;++i){
@@ -159,8 +161,66 @@ public class ROISubregions implements PlugIn {
 			}
 			IJ.log(coeffsString);
 			IJ.log(dCoeffsString);
+			*/
+			
+			//Calculate distance from fit to the point for all pixels -> use to determine bounding box
+			NormalPoint[] distances = new NormalPoint[coordinates.size()];
+			for (int i = 0; i<coordinates.size();++i){
+				distances[i] = pf.getFitPoint(coordinates.get(i),true);
+			}
+			//Get max distance
+			Arrays.sort(distances);
+			int maxDistance = (int) Math.ceil(distances[distances.length-1].distance)+2; //get max distance from fit + add a margin of two pixels
+			
+			//Sort coordinates Y-coordinate to get Y-range
+			Collections.sort(coordinates);
+			int minY = ((int) Math.floor(coordinates.get(0).y)) - maxDistance;	//Include the additional space
+			int maxY = ((int) Math.floor(coordinates.get(coordinates.size()-1).y)) + maxDistance;	//Include the additional space
+			
+			//COVER THE DISTANCE FROM minY to maxY in 1 pixel increments along the fit (line integral), have to solve iteratively
+			//Save the step coordinates in flattenCoordinates -> step through these, and interpolate data along the normal at the step coordinates to flatten the ROI
+			double yVal = minY;
+			double xVal =  getFitVal(coeffs,yVal);
+			double increment,currentTarget;
+			double sum = 0,prevSum=1d;
+			
+			//IJ.log(String.format("Prior X %.2f Y %.2f",getFitVal(coeffs,yVal),yVal));
+			currentTarget = 1d;
+			double prevX,prevY;
+			//int steps = 0;
+			prevY = yVal;
+			prevX = xVal;
+			ArrayList<Coordinate> flattenCoordinates = new ArrayList<Coordinate>();
+			flattenCoordinates.add(new Coordinate(xVal,yVal));
+			while (yVal <=maxY-1d){
+				increment = 0.1;
+				while (sum<currentTarget){
+					yVal+=increment;
+					xVal = getFitVal(coeffs,yVal);
+					if (increment > 0){
+						sum+=Math.sqrt(Math.pow(increment,2d)+Math.pow(prevX-xVal,2d));
+					}else{
+						sum-=Math.sqrt(Math.pow(increment,2d)+Math.pow(prevX-xVal,2d));
+					}
+					prevY = yVal;
+					prevX = xVal;
+					if (currentTarget-sum < 0.2d){
+						increment= 0.01;
+						if (currentTarget-sum < 0.1d){
+							increment= 0.001;
+						}
+					}
+					
+				}
+				//Should have advanced one pixel here, add the current coordinate
+				flattenCoordinates.add(new Coordinate(xVal,yVal));
+				//IJ.log(String.format("Step %d X %.2f Y %.2f",steps,getFitVal(coeffs,yVal),yVal));
+				//++steps;
+				currentTarget += 1d;
+			}
 			
 			
+			//Create the flattened image by using the step coordinates as the starting points
 			//Visualise fit
 			//ij.gui.PolygonRoi https://imagej.nih.gov/ij/developer/api/ij/gui/PolygonRoi.html
 			//https://imagej.nih.gov/ij/developer/api/ij/gui/Overlay.html
@@ -171,10 +231,10 @@ public class ROISubregions implements PlugIn {
 			ol.clear();
 
 			
-			NormalPoint[] nPoints = new NormalPoint[digitizedCoordinates.size()];
+			NormalPoint[] nPoints = new NormalPoint[flattenCoordinates.size()];
 			FloatPolygon fp = new FloatPolygon();
-			for (int i = 0; i<digitizedCoordinates.size();++i){
-				nPoints[i] = pf.getFitPoint(digitizedCoordinates.get(i),true);
+			for (int i = 0; i<flattenCoordinates.size();++i){
+				nPoints[i] = pf.getFitPoint(flattenCoordinates.get(i),true);
 				fp.addPoint(nPoints[i].x,nPoints[i].y);
 				
 				//Add tangent lines to the overlay
@@ -184,18 +244,19 @@ public class ROISubregions implements PlugIn {
 				for (int d = 0; d<dCoeffs.length;++d){
 					xTangentSlope+=dCoeffs[d]*Math.pow(tempY,(double) d);
 				}
-				double xNormalSlope = -1d/xTangentSlope;
+				//double xNormalSlope = -1d/xTangentSlope;
 				
 				double[] tangentUnit = PolyFit.normalise(new double[]{xTangentSlope,1d}); 
 				
 				//Rotate the tangent clockwise (y points down!!! -> positive rads
+				//JATKA TASTA, tee uusi kuva y min -10 to y max + 10, +-max length of point from fit along the normal
 				double[] unitNormal = new double[]{-tangentUnit[1],tangentUnit[0]};
 				
 				//double[] unitNormal = PolyFit.normalise(new double[]{xNormalSlope,1d}); 
 				
 				
 				double[] normalIndicator = new double[]{unitNormal[0]*10d,unitNormal[1]*10d};
-				IJ.log("Coords x "+nPoints[i].x+" y "+tempY+" xslope "+xTangentSlope);
+				//IJ.log("Coords x "+nPoints[i].x+" y "+tempY+" xslope "+xTangentSlope);
 				FloatPolygon lfp = new FloatPolygon();
 				lfp.addPoint(nPoints[i].x,tempY);
 				lfp.addPoint(nPoints[i].x+normalIndicator[0],tempY+normalIndicator[1]);
@@ -228,6 +289,14 @@ public class ROISubregions implements PlugIn {
 		WindowManager.setWindow(imw); 
 		WindowManager.setCurrentWindow(imw); 
 
+	}
+	
+	private double getFitVal(double[] c,double x){
+		double val = 0;
+		for (int d = 0; d<c.length;++d){
+			val+=c[d]*Math.pow(x,(double) d);
+		}
+		return val;
 	}
 	
 	private void visualizeRegions(ImagePlus visualIP,SubRegions subRegions,int[] subDivisions,PixelCoordinates pc){
