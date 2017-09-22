@@ -241,7 +241,7 @@ public class PolyFit {
 		double[] coeffs = new double[fitted.getRowDimension()];	
 		for (int i = 0; i< fitted.getRowDimension(); ++i){
 			coeffs[i] = fitted.get(i,0);
-			System.out.println(String.format("Fit coeff %.1f",coeffs[i]));
+			//System.out.println(String.format("Fit coeff %.1f",coeffs[i]));
 		}
 		return coeffs;
 	}

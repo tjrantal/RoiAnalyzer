@@ -78,12 +78,12 @@ public class ROISubregions implements PlugIn {
 			}
 		}
 		rSettings.setVisible(true);
-		String settings[] = rSettings.getSettings();
+		String[] settings = rSettings.getSettings();
 		rSettings.saveSettings();	//Save ROISettings settings
 		
 		int[] subDivisions = new int[]{Integer.parseInt(settings[1]),Integer.parseInt(settings[0])};	/*Get this from a menu, width wise divisions 
 (columns), height wise (rows)*/
-		System.out.println("columns "+subDivisions[0]+" rows "+subDivisions[1]);
+		//System.out.println("columns "+subDivisions[0]+" rows "+subDivisions[1]);
 		/*Check that an image was open*/
 		if (imp == null) {
             IJ.noImage();
@@ -105,7 +105,6 @@ public class ROISubregions implements PlugIn {
 		depth = imp.getStackSize();
 		int currentSlice =imp.getSlice();
 		
-		SubRegions subRegions	= null;
 		
 		/**Get ROI mask for the current ROI*/
 		
@@ -115,17 +114,8 @@ public class ROISubregions implements PlugIn {
 		/**Do not do subregions, if using ellipse fit, settings 11 = 1*/
 		int fitOrder = Integer.parseInt(settings[11]);
 		if (fitOrder == 0){
-			/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
-			PixelCoordinates pixelCoordinates = new PixelCoordinates(roiMask,width,height,Integer.parseInt(settings[8]));
-			subRegions = new SubRegions(imp,pixelCoordinates,subDivisions);
-			subRegions.printResults(settings,imp);	//Print the results to a TextPanel
-			/**Get the visualization stack*/
-			if (Double.parseDouble(settings[5]) >= 1){
-				ImagePlus visualIP		= null;
-				visualIP = getVisualizationSlice(imp);
-				/*Color the subregions to visualize the division*/
-				visualizeRegions(visualIP,subRegions,subDivisions,pixelCoordinates);
-			}
+			//DO MASK HERE
+			doMask(imp, imp, roiMask, width, height, subDivisions, settings);
 		}else{
 			//USING Polynomial FIT!!!
 			//Pop digitized coordinates into coordinates
@@ -238,21 +228,31 @@ public class ROISubregions implements PlugIn {
 				double cY = flattenCoordinates.get(i).y;
 				for (int j = 0;j< flatHeight; ++j){
 					pixels[i+j*flatWidth] = (short) ip.getInterpolatedPixel(cX+unitNormal[0]*(j-((double) maxDistance)), cY+unitNormal[1]*(j-((double) maxDistance)));
-					maskPixels[i+j*flatWidth] = (byte) bpro.getInterpolatedPixel(cX+unitNormal[0]*(j-((double) maxDistance)), cY+unitNormal[1]*(j-((double) maxDistance)));
+					//Anything above 0.5 = 1, below 0;
+					maskPixels[i+j*flatWidth] = bpro.getInterpolatedPixel(cX+unitNormal[0]*(j-((double) maxDistance)), cY+unitNormal[1]*(j-((double) maxDistance))) <0.5 ? (byte) 0 : (byte) 1;
 				}
 			}
 			ShortProcessor fpro = new ShortProcessor(flatWidth,flatHeight);
 			fpro.setPixels(pixels);
-			ImagePlus flattenedIP = new ImagePlus("Flattened",fpro);
-			flattenedIP.show();
+			ImagePlus flattenedIP = new ImagePlus(imp.getTitle()+" flattened",fpro);
+			flattenedIP.copyScale(imp);
+			//flattenedIP.show();
 			
+			/*
+			//DEBUGGING
 			ByteProcessor bfpro = new ByteProcessor(flatWidth,flatHeight);
 			bfpro.setPixels(maskPixels);			
-			ImagePlus maskIP = new ImagePlus("Mask",bfpro);
-			maskIP.setDisplayRange(0,1);
-			maskIP.show();
+			ImagePlus maskIP = new ImagePlus(imp.getTitle()+" mask",bfpro);
+			maskIP.copyScale(imp);	//Get the scale of the original image
+			maskIP.setDisplayRange(0,1);			
+			*/
+			//maskIP.show();
 			
-			
+			//Feed maskIP and flattenedIP into PixelCoordinates and SubRegions
+			//DO MASK HERE
+			String[] tempSettings = (String[]) Arrays.copyOf(settings,settings.length);
+			tempSettings[8] = "4";	//Always set rotation to 0
+			doMask(flattenedIP,imp, maskPixels, flatWidth, flatHeight, subDivisions, tempSettings);
 		}
 		
 		/*Re-activate the original stack*/
@@ -262,6 +262,21 @@ public class ROISubregions implements PlugIn {
 		WindowManager.setWindow(imw); 
 		WindowManager.setCurrentWindow(imw); 
 
+	}
+	
+	//Do PixelCoordinates and SubRegions
+	private void doMask(ImagePlus imageIn,ImagePlus origIn, byte[] maskIn, int widthIn, int heightIn, int[] subDivisionsIn, String[] settingsIn){
+		/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
+		PixelCoordinates pixelCoordinates = new PixelCoordinates(maskIn,widthIn,heightIn,Integer.parseInt(settingsIn[8]));
+		SubRegions subRegions = new SubRegions(imageIn,pixelCoordinates,subDivisionsIn);
+		subRegions.printResults(settingsIn,origIn);	//Print the results to a TextPanel
+		/**Get the visualization stack*/
+		if (Double.parseDouble(settingsIn[5]) >= 1){
+			ImagePlus visualIP		= null;
+			visualIP = getVisualizationSlice(imageIn);
+			/*Color the subregions to visualize the division*/
+			visualizeRegions(visualIP,subRegions,subDivisionsIn,pixelCoordinates);
+		}
 	}
 	
 	private double getFitVal(double[] c,double x){
