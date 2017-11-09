@@ -108,7 +108,7 @@ public class ROILoader implements PlugIn {
 
 		imageName +=fileSuffix;
 		String fileToOpen = stackPath+"\\"+imageName;
-		IJ.log(fileToOpen);
+		//IJ.log(fileToOpen);
 		//IJ.open(stackPath+"/"+imageName);
 		Opener opener = new Opener();
 		//opener.open(stackPath+"/"+imageName);
