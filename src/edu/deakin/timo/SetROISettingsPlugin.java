@@ -24,6 +24,7 @@ public class SetROISettingsPlugin implements PlugIn {
 		GenericDialog gd = new GenericDialog("Set RoiSettings");
 		gd.addStringField("ROI to read :","");
 		gd.addStringField("Stack path :","");
+		gd.addStringField("File suffix :","");
 		gd.showDialog();
 		if (gd.wasCanceled()) return;
 		//Get settings from the ROISettings
@@ -45,9 +46,10 @@ public class SetROISettingsPlugin implements PlugIn {
 			}
 		}
 		
-		String[] values = new String[2];
+		String[] values = new String[3];
 		values[0] = gd.getNextString();
 		values[1] = gd.getNextString();
+		values[2] = gd.getNextString();
 		
 		//IJ.log(values[0]);
 		//IJ.log(values[1]);
@@ -55,6 +57,7 @@ public class SetROISettingsPlugin implements PlugIn {
 		rSettings.setVisible(true);
 		rSettings.setTextField("ROI to read",values[0]);
 		rSettings.setTextField("Stack path",values[1]);
+		rSettings.setTextField("File suffix",values[2]);
 		String settings[] = rSettings.getSettings();
 		rSettings.saveSettings();	//Save ROISettings settings
 	

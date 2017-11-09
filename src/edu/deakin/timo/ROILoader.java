@@ -64,6 +64,7 @@ public class ROILoader implements PlugIn {
 		//Read ROI file
 		String roiPath = settings[6];	//Roi file path
 		String stackPath = settings[7];	//image stack path
+		String fileSuffix = settings[12];	//image stack path
 		//Get whether to erode ROI from settings
 		int erodeByPixels = Integer.parseInt(settings[9]);
 		int[][] roiCoordinates;
@@ -104,9 +105,10 @@ public class ROILoader implements PlugIn {
 				imageName +="_";
 			}
 		}
-		imageName +=".dcm";
+
+		imageName +=fileSuffix;
 		String fileToOpen = stackPath+"\\"+imageName;
-		//IJ.log(fileToOpen);
+		IJ.log(fileToOpen);
 		//IJ.open(stackPath+"/"+imageName);
 		Opener opener = new Opener();
 		//opener.open(stackPath+"/"+imageName);
