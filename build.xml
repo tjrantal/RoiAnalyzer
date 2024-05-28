@@ -8,12 +8,13 @@
   <!-- set global properties for this build -->
   <property environment="env"/>
   <property name="projectName" location="ROIanalyzer_" />
-  <property name="JAVA_HOME" location="${env.JAVA_HOME}" />
+  <!--<property name="JAVA_HOME" location="${env.JAVA_HOME}" />-->
   <!-- 
 	paths to dependencies, make sure these match....
 	-->
 	
-	<property name="ijPath" location="C:/MyTemp/softa/ImageJ" />
+<!--	<property name="ijPath" location="C:/MyTemp/softa/ImageJ" />-->
+  <property name="ijPath" location="/home/tjrantal/software/ImageJ" />
 	<property name="ijPluginPath2" location="${ijPath}/plugins/jars" /> 	
 	<property name="imagej" location="${ijPath}/ij.jar" />
 	
@@ -31,14 +32,14 @@
     <tstamp/>
 
     <!-- Echo values passed in so there's no confusion -->
-    <echo message="JAVA_HOME is ${JAVA_HOME}"/>
+    <!--<echo message="JAVA_HOME is ${JAVA_HOME}"/>-->
 	<echo message="imagej is ${imagej}"/>
     <mkdir dir="${build}" />
     <mkdir dir="${classes}" />
   </target>
 
   <target name="javacompile" depends="init" description="Compile Java source" >
-	<javac source="6" target="6" srcdir="${javasrc}" destdir="${classes}" nowarn="on">
+	<javac source="8" target="8" srcdir="${javasrc}" destdir="${classes}" nowarn="on">
     <!--<javac source="1.5" srcdir="${javasrc}" destdir="${classes}" nowarn="on">-->
 		<compilerarg line="-Xmaxerrs 10"/>
 		<classpath> 
