@@ -79,11 +79,20 @@ public class PixelCoordinates{
 				pixelsForRotation = sideCoords[2];
 				double bottomAngle = getRotationAngle(pixelsForRotation);
 				angle = (topAngle+bottomAngle)/2d;
-				////IJ.log("Bottom and Top");
+				//IJ.log(String.format("Bottom and Top %.1f",angle/Math.PI*180d));
+				break;
 			case 4:
 				//Set rotation to zero
 				angle = 0d;
 				//IJ.log("No rotation");
+				break;
+			case 5:
+				//Get rotation as the average of top corner to top corner and bottom corner to bottom corner
+				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
+				double angleTop  = Math.acos((Utils.getUnit(new double[]{sideCoords[1][0][0]-sideCoords[0][0][0],sideCoords[1][0][1]-sideCoords[0][0][1]}))[0]);
+				double angleBottom  = Math.acos((Utils.getUnit(new double[]{sideCoords[2][0][0]-sideCoords[3][0][0],sideCoords[2][0][1]-sideCoords[3][0][1]}))[0]);
+				angle = -(angleTop+angleBottom)/2d;
+				//IJ.log(String.format("Bottom and Top Corners %.1f",angle/Math.PI*180d));
 				break;
 		}
 		

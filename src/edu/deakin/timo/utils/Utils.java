@@ -37,4 +37,23 @@ public class Utils{
 		}
 		return coefficients;
 	}
+
+	//Return the vector magnitude
+	public static double norm(double[] a){
+		double sum = 0;
+		for (int i = 0;i<a.length;++i){
+			sum+=a[i]*a[i];
+		}
+		return Math.sqrt(sum);
+	}
+
+	//Return unit vector
+	public static double[] getUnit(double[] a){
+		double len = norm(a);
+		double[] ret = new double[a.length];
+		for (int i = 0;i<a.length;++i){
+			ret[i]=a[i]/len;
+		}
+		return ret;
+	}
 }
