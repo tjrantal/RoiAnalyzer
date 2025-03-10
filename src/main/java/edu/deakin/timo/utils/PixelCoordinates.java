@@ -16,6 +16,7 @@ import org.locationtech.jts.algorithm.ConvexHull;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.operation.distance.DistanceOp;
 
 public class PixelCoordinates{
 	public double[][] coordinates;
@@ -187,7 +188,30 @@ public class PixelCoordinates{
 		return rotated;	
 	}
 	
-	
+
+	/*
+	* Helper to compute distance from a coordinate with JTS
+	* @coordinates an array of coordinates to check
+	* @target the coordinate to check
+	* @returns the index of the coordinate closest to the target
+	* */
+	public static int findNearest(Coordinate[] coordinates, Coordinate target) {
+		if (coordinates == null || coordinates.length == 0 || target == null) {
+			throw new IllegalArgumentException("Coordinates array and target must not be null or empty.");
+		}
+
+		double minDistance = target.distance(coordinates[0]);
+		int minIndex = 0;
+
+		for (int i = 0; i< coordinates.length; ++i) {
+			double dist = target.distance(coordinates[i]);
+			if (dist < minDistance) {
+				minDistance = dist;
+				minIndex = i;
+			}
+		}
+		return minIndex;
+	}
 	/**
 		Determine the corners of the edge. Helper function for getRotationAngleTopRow
 		@param edge The coordinates of the edge for corner detection
@@ -201,15 +225,23 @@ public class PixelCoordinates{
 		Coordinate[] coords = new Coordinate[edge.iit.size()];
 		for (int i = 0;i<edge.iit.size();++i){
 			coords[i] = new Coordinate(edge.iit.get(i),edge.jiit.get(i));
-		};
+		}
 
 		// Create a convex hull geometry
 		ConvexHull hull = new ConvexHull(coords, new GeometryFactory());
 		// Compute the minimum bounding rectangle
 		Geometry minAreaRect = MinimumAreaRectangle.getMinimumRectangle(hull.getConvexHull());
-
+		Coordinate[]	cornerCoordinates = minAreaRect.getCoordinates();
 		IJ.log("Minimum Bounding Rectangle: " + minAreaRect);
+		for (int i = 0;i<cornerCoordinates.length;++i){
+			IJ.log("Coordinates: " + cornerCoordinates[i]);
+		}
 
+		//Get the closes coordinates
+		for (int i = 0;i<4;++i) {
+			int nearest = findNearest(coords, cornerCoordinates[i]);
+			IJ.log(String.format("Corner %d x %.1f y %.1f",i,coords[nearest].x,coords[nearest].y));
+		}
 		int[][] corners = null;
 		/*Calculate the roi coordinates in polar coordinates*/
 		double r,theta,a,b;
