@@ -48,6 +48,7 @@ public class PixelCoordinates{
 		centreCoordinates[1]/=(double)roiPixels;
 		
 		angle = 0;
+		double angleTop, angleBottom;
 		double[][] pixelsForRotation=  null;
 		double[][][] sideCoords;
 		switch (rotationSelection){
@@ -63,6 +64,7 @@ public class PixelCoordinates{
 				pixelsForRotation = sideCoords[0];
 				angle = getRotationAngle(pixelsForRotation);
 				////IJ.log("Top");
+				IJ.log(String.format("Top %.1f deg x %.1f y %.1f  x %.1f y %.1f ",angle/Math.PI*180d,pixelsForRotation[0][0],pixelsForRotation[0][1],pixelsForRotation[pixelsForRotation.length-1][0],pixelsForRotation[pixelsForRotation.length-1][1]));
 				break;
 			case 2:
 				//Get rotation angle based on bottom row of pixels
@@ -89,8 +91,16 @@ public class PixelCoordinates{
 			case 5:
 				//Get rotation as the average of top corner to top corner and bottom corner to bottom corner
 				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
-				double angleTop  = Math.acos((Utils.getUnit(new double[]{sideCoords[1][0][0]-sideCoords[0][0][0],sideCoords[1][0][1]-sideCoords[0][0][1]}))[0]);
-				double angleBottom  = Math.acos((Utils.getUnit(new double[]{sideCoords[2][0][0]-sideCoords[3][0][0],sideCoords[2][0][1]-sideCoords[3][0][1]}))[0]);
+				angleTop  = Math.acos((Utils.getUnit(new double[]{sideCoords[1][0][0]-sideCoords[0][0][0],sideCoords[1][0][1]-sideCoords[0][0][1]}))[0]);
+				angleBottom  = Math.acos((Utils.getUnit(new double[]{sideCoords[2][0][0]-sideCoords[3][0][0],sideCoords[2][0][1]-sideCoords[3][0][1]}))[0]);
+				angle = -(angleTop+angleBottom)/2d;
+				//IJ.log(String.format("Bottom and Top Corners %.1f",angle/Math.PI*180d));
+				break;
+			case 6:
+				//Rotate the top line to horizontal clock-wise
+				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
+				angleTop  = Math.acos((Utils.getUnit(new double[]{sideCoords[1][0][0]-sideCoords[0][0][0],sideCoords[1][0][1]-sideCoords[0][0][1]}))[0]);
+				angleBottom  = Math.acos((Utils.getUnit(new double[]{sideCoords[2][0][0]-sideCoords[3][0][0],sideCoords[2][0][1]-sideCoords[3][0][1]}))[0]);
 				angle = -(angleTop+angleBottom)/2d;
 				//IJ.log(String.format("Bottom and Top Corners %.1f",angle/Math.PI*180d));
 				break;
