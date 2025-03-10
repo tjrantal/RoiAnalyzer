@@ -9,6 +9,14 @@ import ij.ImagePlus;
 import java.util.*;	//Vector, Collections
 import edu.deakin.timo.detectEdges.EdgeDetectorRoiAnalyser;
 import edu.deakin.timo.detectEdges.DetectedEdge;
+
+//JTS for rectangle fit from maven org.locationtech.jts jts-core
+import org.locationtech.jts.algorithm.MinimumAreaRectangle;
+import org.locationtech.jts.algorithm.ConvexHull;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Coordinate;
+
 public class PixelCoordinates{
 	public double[][] coordinates;
 	public double[][] rotatedCoordinates;
@@ -189,6 +197,18 @@ public class PixelCoordinates{
 	*/
 	public static double[][][] getSidePixels(DetectedEdge edge, double[] centreCoords){
 
+		//Test rectangle fit
+		Coordinate[] coords = new Coordinate[edge.iit.size()];
+		for (int i = 0;i<edge.iit.size();++i){
+			coords[i] = new Coordinate(edge.iit.get(i),edge.jiit.get(i));
+		};
+
+		// Create a convex hull geometry
+		ConvexHull hull = new ConvexHull(coords, new GeometryFactory());
+		// Compute the minimum bounding rectangle
+		Geometry minAreaRect = MinimumAreaRectangle.getMinimumRectangle(hull.getConvexHull());
+
+		IJ.log("Minimum Bounding Rectangle: " + minAreaRect);
 
 		int[][] corners = null;
 		/*Calculate the roi coordinates in polar coordinates*/

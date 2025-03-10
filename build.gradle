@@ -30,7 +30,7 @@ def srcDir = file("src")
 def configFile = file("src/main/java/plugins.config")  // Path to plugins.config
 def buildDir = file("build")
 def classesDir = file("${buildDir}/java")
-def distDir = file("${buildDir}/dist")
+def distDir = file("${buildDir}/libs")
 def ijPluginPath = file("C:/MyTemp/softa/ImageJ/plugins/jars")
 
 
