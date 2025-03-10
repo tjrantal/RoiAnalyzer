@@ -6,24 +6,8 @@ plugins {
 group = 'edu.deakin.timo'
 version = '1.0'
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
 
-repositories {
-    flatDir {
-        dirs 'C:/MyTemp/softa/ImageJ' // Path to ij.jar
-    }
-           mavenCentral()
-       maven { url "https://maven.jzy3d.org/releases" }
-}
-
-dependencies {
-   implementation files('C:/MyTemp/softa/ImageJ/ij.jar') // ImageJ dependency
-   // https://mvnrepository.com/artifact/org.locationtech.jts/jts-core
-   implementation 'org.locationtech.jts:jts-core:1.20.0'
-}
+def isWindows = System.getProperty("os.name").toLowerCase().contains("win")
 
 // Directories
 def srcDir = file("src")
@@ -31,7 +15,32 @@ def configFile = file("src/main/java/plugins.config")  // Path to plugins.config
 def buildDir = file("build")
 def classesDir = file("${buildDir}/java")
 def distDir = file("${buildDir}/libs")
-def ijPluginPath = file("C:/MyTemp/softa/ImageJ/plugins/jars")
+def ijPath = isWindows ? file("C:/MyTemp/softa/ImageJ") : file("/home/tjrantal/softa/ImageJ")
+def ijJar = new File(ijPath, "ij.jar").absolutePath
+def ijPluginPath = new File(ijPath, "/plugins/jars").absolutePath
+
+
+
+
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+repositories {
+    flatDir {
+        dirs ijPath // Path to ij.jar
+    }
+           mavenCentral()
+       maven { url "https://maven.jzy3d.org/releases" }
+}
+
+dependencies {
+   implementation files(ijJar) // ImageJ dependency
+   // https://mvnrepository.com/artifact/org.locationtech.jts/jts-core
+   implementation 'org.locationtech.jts:jts-core:1.20.0'
+}
 
 
 // Include `plugins.config` in the JAR
@@ -57,14 +66,8 @@ task shadowJarTask(type: Jar) {
     //manifest {
     //    attributes 'Main-Class': application.mainClass // Make sure to set your main class here
     // }
+    dependsOn jar  // Ensure shadowJar runs after jar
 }
-
-tasks.build {
-    dependsOn shadowJar  // Ensure shadowJar runs when building the project
-}
-
-
-
 
 // Copy JAR to ImageJ plugins folder
 tasks.register('copyJar', Copy) {
@@ -73,6 +76,9 @@ tasks.register('copyJar', Copy) {
     into(ijPluginPath)
 }
 
+tasks.build {
+    dependsOn copyJar  // Ensure copy runs
+}
 
 // Default task
-defaultTasks 'jar'
+defaultTasks 'build'
