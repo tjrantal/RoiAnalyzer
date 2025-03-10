@@ -15,8 +15,8 @@
 	-->
 	
 <!--	<property name="ijPath" location="C:/MyTemp/softa/ImageJ" />-->
-<!--   <property name="ijPath" location="C:/MyTemp/softa/ImageJ" />-->
-	   <property name="ijPath" location="C:/timo/software/ImageJ" />
+<property name="ijPath" location="C:/MyTemp/softa/ImageJ" />
+<!--   	   <property name="ijPath" location="C:/timo/software/ImageJ" /> -->
 <!--  <property name="ijPath" location="/home/tjrantal/software/ImageJ" />-->
 	<property name="ijPluginPath2" location="${ijPath}/plugins/jars" /> 	
 	<property name="imagej" location="${ijPath}/ij.jar" />

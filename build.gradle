@@ -1,0 +1,78 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1' // Make sure to use the latest version
+}
+
+group = 'edu.deakin.timo'
+version = '1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+repositories {
+    flatDir {
+        dirs 'C:/MyTemp/softa/ImageJ' // Path to ij.jar
+    }
+           mavenCentral()
+       maven { url "https://maven.jzy3d.org/releases" }
+}
+
+dependencies {
+   implementation files('C:/MyTemp/softa/ImageJ/ij.jar') // ImageJ dependency
+   // https://mvnrepository.com/artifact/org.locationtech.jts/jts-core
+   implementation 'org.locationtech.jts:jts-core:1.20.0'
+}
+
+// Directories
+def srcDir = file("src")
+def configFile = file("src/main/java/plugins.config")  // Path to plugins.config
+def buildDir = file("build")
+def classesDir = file("${buildDir}/java")
+def distDir = file("${buildDir}/dist")
+def ijPluginPath = file("C:/MyTemp/softa/ImageJ/plugins/jars")
+
+
+// Include `plugins.config` in the JAR
+jar {
+    from(configFile) {
+        into("/")  // Root of the JAR
+    }
+}
+
+
+shadowJar {
+    archiveBaseName.set(rootProject.name)  // Name of your output jar
+    archiveVersion.set('')          // Version of your output jar
+    archiveClassifier.set('')          // Optional: Set to 'all' or empty
+    from(configFile) {
+        into("/")  // Root of the Shadow JAR
+    }
+}
+
+// Optional: If you want to build and install the shadow JAR into your local Maven repository
+task shadowJarTask(type: Jar) {
+    from sourceSets.main.output
+    //manifest {
+    //    attributes 'Main-Class': application.mainClass // Make sure to set your main class here
+    // }
+}
+
+tasks.build {
+    dependsOn shadowJar  // Ensure shadowJar runs when building the project
+}
+
+
+
+
+// Copy JAR to ImageJ plugins folder
+tasks.register('copyJar', Copy) {
+    dependsOn shadowJar
+    from("${distDir}/ROIanalyzer_.jar")
+    into(ijPluginPath)
+}
+
+
+// Default task
+defaultTasks 'jar'
