@@ -213,48 +213,7 @@ public class PixelCoordinates{
 		return minIndex;
 	}
 
-	public static double[][] getPolarCornersFromRectangle(double[] centreCoords, double[][] rectangleCoords,int[] cornerIndices){
-		double r,theta,a,b;
-		Double[][] polar = new Double[rectangleCoords.length][5];	/*0 r, 1 theta, 2 x, 3 y*/
-		for (int i=0; i<rectangleCoords.length;++i){
-			polar[i][2] = (double) rectangleCoords[i][0];
-			polar[i][3] = (double) rectangleCoords[i][1];
-			polar[i][4] = (double) cornerIndices[i];
-			a = polar[i][2]-centreCoords[0];
-			b = polar[i][3]-centreCoords[1];
-			r = Math.sqrt(Math.pow(a,2d)+Math.pow(b,2d));
-			theta = Math.atan2(b,a);
-			polar[i][0] = r;
-			polar[i][1] = theta;
-			IJ.log(String.format("corner %d r %.1f theta %.1f",i,r,theta/Math.PI*180));
-		}
-		/*sort the coordinates, theta 0 = towards right, theta increases clock-wise in ImageJ image (where y increases towards bottom!*/
-		/**Prepare a comparator*/
-		Comparator<Double[]> comparator = new Comparator<Double[]>() {
-			@Override
-			public int compare(Double[] o1, Double[] o2) {
-				return o1[1].compareTo(o2[1]);
-			}
-		};
-		//IJ.log("Sort polar coords");
-		Arrays.sort(polar,comparator);	/**Sort the polar coordinates into ascending order according to theta*/
-		double[][] sortedCorners = new double[4][];
-
-		for (int i=0; i<rectangleCoords.length;++i){
-			sortedCorners[i] = new double[]{polar[i][0],polar[i][1],polar[i][4]};
-		}
-		return sortedCorners;
-	}
-
-	/**
-		Determine the corners of the edge. Helper function for getRotationAngleTopRow
-		@param edge The coordinates of the edge for corner detection
-		@param centreCoords, the coordinates of the centre of the ROI the edge belongs to
-		@return corners 4 by 2 array with x-, and y- coordinates of the corners
-	
-	*/
-	public static double[][][] getSidePixels(DetectedEdge edge, double[] centreCoords){
-
+	public static double[][] getPolarCornersFromRectangle(DetectedEdge edge, double[] centreCoords){
 		//Test rectangle fit
 		Coordinate[] coords = new Coordinate[edge.iit.size()];
 		for (int i = 0;i<edge.iit.size();++i){
@@ -280,8 +239,50 @@ public class PixelCoordinates{
 			cornerIndices[i] = nearest;
 			rectangleCornerCoordinates[i] = new double[]{coords[nearest].x,coords[nearest].y};
 		}
-		double[][] polarCornersRectangle = getPolarCornersFromRectangle(centreCoords, rectangleCornerCoordinates,cornerIndices);
 
+
+		double r,theta,a,b;
+		Double[][] polar = new Double[rectangleCornerCoordinates.length][5];	/*0 r, 1 theta, 2 x, 3 y*/
+		for (int i=0; i<rectangleCornerCoordinates.length;++i){
+			polar[i][2] = (double) rectangleCornerCoordinates[i][0];
+			polar[i][3] = (double) rectangleCornerCoordinates[i][1];
+			polar[i][4] = (double) cornerIndices[i];
+			a = polar[i][2]-centreCoords[0];
+			b = polar[i][3]-centreCoords[1];
+			r = Math.sqrt(Math.pow(a,2d)+Math.pow(b,2d));
+			theta = Math.atan2(b,a);
+			polar[i][0] = r;
+			polar[i][1] = theta;
+			IJ.log(String.format("corner %d r %.1f theta %.1f",i,r,theta/Math.PI*180));
+		}
+		/*sort the coordinates, theta 0 = towards right, theta increases clock-wise in ImageJ image (where y increases towards bottom!*/
+		/**Prepare a comparator*/
+		Comparator<Double[]> comparator = new Comparator<Double[]>() {
+			@Override
+			public int compare(Double[] o1, Double[] o2) {
+				return o1[1].compareTo(o2[1]);
+			}
+		};
+		//IJ.log("Sort polar coords");
+		Arrays.sort(polar,comparator);	/**Sort the polar coordinates into ascending order according to theta*/
+		double[][] sortedCorners = new double[4][];
+
+		for (int i=0; i<rectangleCornerCoordinates.length;++i){
+			sortedCorners[i] = new double[]{polar[i][0],polar[i][1],polar[i][4]};
+			IJ.log(String.format("polar corner %d r %.1f theta %.1f index %d",i,sortedCorners[i][0],sortedCorners[i][1],sortedCorners[i][2]));
+		}
+		return sortedCorners;
+	}
+
+	/**
+		Determine the corners of the edge. Helper function for getRotationAngleTopRow
+		@param edge The coordinates of the edge for corner detection
+		@param centreCoords, the coordinates of the centre of the ROI the edge belongs to
+		@return corners 4 by 2 array with x-, and y- coordinates of the corners
+	
+	*/
+	public static double[][][] getSidePixels(DetectedEdge edge, double[] centreCoords){
+		double[][] polarCornersRectangle = getPolarCornersFromRectangle(edge, centreCoords);
 		int[][] corners = null;
 		/*Calculate the roi coordinates in polar coordinates*/
 		double r,theta,a,b;
@@ -345,9 +346,9 @@ public class PixelCoordinates{
 		for (int i = 0;i<polarCorners.length-1;++i){
 			IJ.log(String.format("(int) polarCorners[i+1][2],(int) polarCorners[i][2] %d %d",(int) polarCorners[i+1][2],(int) polarCorners[i][2]));
 
-			sideCoordinates[i] = new double[(int) (Math.abs(polarCorners[i+1][2]-polarCorners[i][2])+1))][2];
+			sideCoordinates[i] = new double[(int) (Math.abs(polarCorners[i+1][2]-polarCorners[i][2])+1)][2];
 			cnt = 0;
-			if (Math.abs(polarCorners[i+1][2] > polarCorners[i][2])) {
+			if (polarCorners[i+1][2] > polarCorners[i][2]) {
 				for (int j = (int) polarCorners[i][2]; j <= (int) polarCorners[i + 1][2]; ++j) {
 					sideCoordinates[i][cnt][0] = polar[j][2];
 					sideCoordinates[i][cnt][1] = polar[j][3];
