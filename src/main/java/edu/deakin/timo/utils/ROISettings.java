@@ -1,6 +1,6 @@
 /*
  Image/J Plugins
- Copyright (C) 2012 Timo Rantalainen
+ Copyright (C) 2012 to 2025 Timo Rantalainen
  Author's email: tjrantal at gmail dot com
  The code is licenced under GPL 2.0 or newer
  */
@@ -25,8 +25,8 @@ import java.awt.*;		/*Layout*/
 public class ROISettings extends JFrame {
 	
 	private Preferences preferences;		/**Saving the default file path*/
-	public final String[] keys = {"Sub-region Rows","Sub-region Columns","Root Directory","Results Sub-directory","Roi results directory","Visualize Sub-regions [<1 off]","ROI to read","Stack path","Rotation [0 all pix, 1 top row, 4 no rotation]","Erode ROIs","Print Widths","PolyFit [0 = no, else = order]","File suffix"};
-	private final String[] defaults = {"1","5","c:/Output","IVD","ROIs","0","c:/Output","C:/timo/research/BelavyQuittner2015/stacks","1","0","0","0",".dcm"};
+	public final String[] keys = {"Sub-region Rows","Sub-region Columns","Root Directory","Results Sub-directory","Roi results directory","Visualize Sub-regions [<1 off]","ROI to read","Stack path","Rotation [0 all pix, 1 top row, 4 no rotation]","Erode ROIs","Print Widths","PolyFit [0 = no, else = order]","File suffix","Rectangle Quadrants"};
+	private final String[] defaults = {"1","5","c:/Output","IVD","ROIs","0","c:/Output","C:/timo/research/BelavyQuittner2015/stacks","1","0","0","0",".dcm","0"};
 	private String[] settings;
 	private JTextField[] textFields;
 

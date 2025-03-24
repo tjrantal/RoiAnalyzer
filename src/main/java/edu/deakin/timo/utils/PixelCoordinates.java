@@ -24,15 +24,21 @@ public class PixelCoordinates{
 	public double[] centreCoordinates;
 	public int roiPixels;
 	public double angle;
-	
+
+	/***Helper construtor*/
+	public PixelCoordinates(byte[] mask,int width, int height,int rotationSelection){
+		this(mask,width,height,rotationSelection,false);
+	}
+
 	/**
 		Constructor
 		@param mask the byte mask for calculating ROI pixel coordinates for
 		@param width the width of the image the mask corresponds to
 		@param height the height of the image the mask corresponds to
+		@param useRectangle whether to use minimal rectangle fit to figure out ROI corners
 	*/
 	
-	public PixelCoordinates(byte[] mask,int width, int height,int rotationSelection){
+	public PixelCoordinates(byte[] mask,int width, int height,int rotationSelection, boolean useRectangle){
 		roiPixels = 0;
 		for (int i = 0; i<mask.length;++i){
 			if (mask[i]==1){
@@ -69,22 +75,22 @@ public class PixelCoordinates{
 				break;
 			case 1:
 				//Get rotation angle based on top row of pixels
-				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
+				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height,useRectangle);
 				pixelsForRotation = sideCoords[0];
 				angle = getRotationAngle(pixelsForRotation);
 				////IJ.log("Top");
-				IJ.log(String.format("Top %.1f deg x %.1f y %.1f  x %.1f y %.1f ",angle/Math.PI*180d,pixelsForRotation[0][0],pixelsForRotation[0][1],pixelsForRotation[pixelsForRotation.length-1][0],pixelsForRotation[pixelsForRotation.length-1][1]));
+				//IJ.log(String.format("Top %.1f deg x %.1f y %.1f  x %.1f y %.1f ",angle/Math.PI*180d,pixelsForRotation[0][0],pixelsForRotation[0][1],pixelsForRotation[pixelsForRotation.length-1][0],pixelsForRotation[pixelsForRotation.length-1][1]));
 				break;
 			case 2:
 				//Get rotation angle based on bottom row of pixels
-				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
+				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height,useRectangle);
 				pixelsForRotation = sideCoords[2];
 				angle = getRotationAngle(pixelsForRotation);
 				////IJ.log("Bottom");
 				break;
 			case 3:
 				//Get rotation angle based on top and bottom row of pixels
-				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
+				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height,useRectangle);
 				pixelsForRotation = sideCoords[0];
 				double topAngle = getRotationAngle(pixelsForRotation);
 				pixelsForRotation = sideCoords[2];
@@ -99,7 +105,7 @@ public class PixelCoordinates{
 				break;
 			case 5:
 				//Get rotation as the average of top corner to top corner and bottom corner to bottom corner
-				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
+				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height,useRectangle);
 				angleTop  = Math.acos((Utils.getUnit(new double[]{sideCoords[1][0][0]-sideCoords[0][0][0],sideCoords[1][0][1]-sideCoords[0][0][1]}))[0]);
 				angleBottom  = Math.acos((Utils.getUnit(new double[]{sideCoords[2][0][0]-sideCoords[3][0][0],sideCoords[2][0][1]-sideCoords[3][0][1]}))[0]);
 				angle = -(angleTop+angleBottom)/2d;
@@ -107,7 +113,7 @@ public class PixelCoordinates{
 				break;
 			case 6:
 				//Rotate the top line to horizontal clock-wise
-				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height);
+				sideCoords = getRoiSideCoordinates(centreCoordinates,mask,width,height,useRectangle);
 				angleTop  = Math.acos((Utils.getUnit(new double[]{sideCoords[1][0][0]-sideCoords[0][0][0],sideCoords[1][0][1]-sideCoords[0][0][1]}))[0]);
 				angleBottom  = Math.acos((Utils.getUnit(new double[]{sideCoords[2][0][0]-sideCoords[3][0][0],sideCoords[2][0][1]-sideCoords[3][0][1]}))[0]);
 				angle = -(angleTop+angleBottom)/2d;
@@ -127,7 +133,12 @@ public class PixelCoordinates{
 			rotatedCoordinates[i][1] = temp[1];
 		}
 	}
-	
+
+	/**Helper call*/
+	private double[][][] getRoiSideCoordinates(double[] centreCoordinates,byte[] mask,int width, int height) {
+		return getRoiSideCoordinates(centreCoordinates,mask,width, height,false);
+	}
+
 	/**
 		Get rotation angle for a ROI to align the top row  with the horizon
 		
@@ -136,13 +147,18 @@ public class PixelCoordinates{
 		@return required rotation angle
 		EdgeDetector
 	*/
-	private double[][][] getRoiSideCoordinates(double[] centreCoordinates,byte[] mask,int width, int height){
+	private double[][][] getRoiSideCoordinates(double[] centreCoordinates,byte[] mask,int width, int height, boolean useRectangle) {
 		////IJ.log("Create EdgeDetector");
 		//DetectedEdge test = new DetectedEdge(new Vector<Integer>(),new Vector<Integer>());
-		EdgeDetectorRoiAnalyser edge = new EdgeDetectorRoiAnalyser(mask,width,height);
+		EdgeDetectorRoiAnalyser edge = new EdgeDetectorRoiAnalyser(mask, width, height);
 		////IJ.log("Vector Detected Edge");
 		Vector<DetectedEdge> edges = edge.edges;
-		
+
+		if (useRectangle) {
+			return getPolarCornersFromRectangle(edges.get(0), centreCoordinates);	//Use smalles rectangle to figure out corners
+		}else{
+			return getSidePixels(edges.get(0), centreCoordinates);    //The tangent of the rotation angle is coeffs[1]/1
+		}
 		//Visualise the mask here
 		/*
 		ImagePlus resultImage = NewImage.createByteImage("Mask visualisation",width,height,1, NewImage.FILL_BLACK);
@@ -161,7 +177,7 @@ public class PixelCoordinates{
 			//IJ.log("edge x "+edges.get(0).iit.get(i)+" y "+edges.get(0).jiit.get(i));
 		}
 		*/
-		return getSidePixels(edges.get(0), centreCoordinates);	//The tangent of the rotation angle is coeffs[1]/1
+
 	}
 	
 	
@@ -213,7 +229,12 @@ public class PixelCoordinates{
 		return minIndex;
 	}
 
-	public static double[][] getPolarCornersFromRectangle(DetectedEdge edge, double[] centreCoords){
+	/*
+	*Determine the smallest rotated rectangle that the ROI fits through
+	* Get points that are closest to the rectangle corners.
+	* Order the points so that 0 to 1 is top with top defined as the side closest to horizontal next to the corner with the top-most y-coordinate
+	* */
+	public static double[][][] getPolarCornersFromRectangle(DetectedEdge edge, double[] centreCoords){
 		//Test rectangle fit
 		Coordinate[] coords = new Coordinate[edge.iit.size()];
 		for (int i = 0;i<edge.iit.size();++i){
@@ -225,9 +246,9 @@ public class PixelCoordinates{
 		// Compute the minimum bounding rectangle
 		Geometry minAreaRect = MinimumAreaRectangle.getMinimumRectangle(hull.getConvexHull());
 		Coordinate[]	cornerCoordinates = minAreaRect.getCoordinates();
-		IJ.log("Minimum Bounding Rectangle: " + minAreaRect);
+		//IJ.log("Minimum Bounding Rectangle: " + minAreaRect);
 		for (int i = 0;i<cornerCoordinates.length;++i){
-			IJ.log("Coordinates: " + cornerCoordinates[i]);
+			//IJ.log("Coordinates: " + cornerCoordinates[i]);
 		}
 
 		//Get the closes coordinates
@@ -235,7 +256,7 @@ public class PixelCoordinates{
 		double[][] rectangleCornerCoordinates = new double[4][];
 		for (int i = 0;i<4;++i) {
 			int nearest = findNearest(coords, cornerCoordinates[i]);
-			IJ.log(String.format("Corner %d x %.1f y %.1f",i,coords[nearest].x,coords[nearest].y));
+			//IJ.log(String.format("Corner %d x %.1f y %.1f",i,coords[nearest].x,coords[nearest].y));
 			cornerIndices[i] = nearest;
 			rectangleCornerCoordinates[i] = new double[]{coords[nearest].x,coords[nearest].y};
 		}
@@ -253,7 +274,7 @@ public class PixelCoordinates{
 			theta = Math.atan2(b,a);
 			polar[i][0] = r;
 			polar[i][1] = theta;
-			IJ.log(String.format("corner %d r %.1f theta %.1f",i,r,theta/Math.PI*180));
+			//IJ.log(String.format("corner %d r %.1f theta %.1f",i,r,theta/Math.PI*180));
 		}
 		/*sort the coordinates, theta 0 = towards right, theta increases clock-wise in ImageJ image (where y increases towards bottom!*/
 		/**Prepare a comparator*/
@@ -267,11 +288,67 @@ public class PixelCoordinates{
 		Arrays.sort(polar,comparator);	/**Sort the polar coordinates into ascending order according to theta*/
 		double[][] sortedCorners = new double[4][];
 
+		int minY = Integer.MAX_VALUE;
+		int minInd = -1;
 		for (int i=0; i<rectangleCornerCoordinates.length;++i){
 			sortedCorners[i] = new double[]{polar[i][0],polar[i][1],polar[i][4]};
-			IJ.log(String.format("polar corner %d r %.1f theta %.1f index %d",i,sortedCorners[i][0],sortedCorners[i][1],sortedCorners[i][2]));
+			if (coords[(int) sortedCorners[i][2]].y < minY){
+				minY = (int) coords[(int) sortedCorners[i][2]].y;
+				minInd = i;
+			}
+			//IJ.log(String.format("polar corner %d r %.1f theta %.1f index %d",i,sortedCorners[i][0],sortedCorners[i][1],(int) sortedCorners[i][2]));
 		}
-		return sortedCorners;
+		//Get previous and next corner indices
+		int prevIndex = (minInd - 1 + sortedCorners.length) % sortedCorners.length;
+		int nextIndex = (minInd + 1) % sortedCorners.length;
+
+		//Check which side is closer to horizontal
+		double dxNext = Math.abs(coords[(int) sortedCorners[nextIndex][2]].x - coords[(int) sortedCorners[minInd][2]].x);
+		double dyNext = Math.abs(coords[(int) sortedCorners[nextIndex][2]].y - coords[(int) sortedCorners[minInd][2]].y);
+		double dxPrev = Math.abs(coords[(int) sortedCorners[minInd][2]].x - coords[(int) sortedCorners[prevIndex][2]].x);
+		double dyPrev = Math.abs(coords[(int) sortedCorners[minInd][2]].y - coords[(int) sortedCorners[prevIndex][2]].y);
+
+		int index0, index1;
+		if (dxNext / (dyNext + 1e-6) > dxPrev / (dyPrev + 1e-6)) {
+			index0 = minInd;
+			index1 = nextIndex;
+		} else {
+			index1 = minInd;
+			index0 = prevIndex;
+		}
+		//IJ.log(String.format("Top Rectangle corners"));
+		//IJ.log(String.format("index0 %d r %.1f theta %.1f index %d x %.1f y %.1f",index0,sortedCorners[index0][0],sortedCorners[index0][1],(int) sortedCorners[index0][2],coords[(int) sortedCorners[index0][2]].x,coords[(int) sortedCorners[index0][2]].y));
+		//IJ.log(String.format("index1 %d r %.1f theta %.1f index %d x %.1f y %.1f",index1,sortedCorners[index1][0],sortedCorners[index1][1],(int) sortedCorners[index1][2],coords[(int) sortedCorners[index1][2]].x,coords[(int) sortedCorners[index1][2]].y));
+
+		//sort the corners so that top side is 0 to 1
+		double[][] orderedCorners = new double[5][];
+		for (int i=index0; i<index0+sortedCorners.length;++i){
+			int ind = i % sortedCorners.length;
+			orderedCorners[i] = new double[]{sortedCorners[ind][0],sortedCorners[ind][1],sortedCorners[ind][2]};
+			//IJ.log(String.format("Corner %d r %.1f theta %.1f index %d x %.1f y %.1f",i,orderedCorners[i][0],orderedCorners[i][1],(int) sortedCorners[i][2],coords[(int) sortedCorners[i][2]].x,coords[(int) sortedCorners[i][2]].y));
+		}
+		orderedCorners[4] = orderedCorners[0];	//Close the loop
+
+		//Create side coordinates here
+		double[][][] sideCoordinates = new double[4][][];
+		int cnt = 0;
+		//The last side has to be handled manually
+		for (int i = 0;i<orderedCorners.length-1;++i){
+			int sourceInd = (int) orderedCorners[i][2];
+			int targetInd = (int) orderedCorners[i+1][2];
+			if (targetInd < sourceInd){
+				targetInd+=coords.length;
+			}
+			sideCoordinates[i] = new double[(int) targetInd-sourceInd+1][2];
+			cnt = 0;
+			for (int j = sourceInd; j <=targetInd;++j){
+				int ind = j % coords.length;
+				sideCoordinates[i][cnt][0] = coords[ind].x;
+				sideCoordinates[i][cnt][1] = coords[ind].y;
+				++cnt;
+			}
+		}
+		return sideCoordinates;
 	}
 
 	/**
@@ -282,7 +359,6 @@ public class PixelCoordinates{
 	
 	*/
 	public static double[][][] getSidePixels(DetectedEdge edge, double[] centreCoords){
-		double[][] polarCornersRectangle = getPolarCornersFromRectangle(edge, centreCoords);
 		int[][] corners = null;
 		/*Calculate the roi coordinates in polar coordinates*/
 		double r,theta,a,b;
@@ -331,20 +407,20 @@ public class PixelCoordinates{
 			}
 			//IJ.log("found corner "+i+" maxInd "+maxInd+" current ind "+ind+" of "+polar.length);
 			polarCorners[i] = new double[]{maxR,maxTheta,maxInd};	
-			IJ.log("found corner "+i+" x "+ polar[(int)polarCorners[i][2]][2] + " y "+polar[(int)polarCorners[i][2]][3]);
+			//IJ.log("found corner "+i+" x "+ polar[(int)polarCorners[i][2]][2] + " y "+polar[(int)polarCorners[i][2]][3]);
 		}
 
 		//Test rotation
-		polarCorners = polarCornersRectangle;
+		//polarCorners = polarCornersRectangle;
 
 		//KEEP GOING FROM HERE. HAVE TO ALLOW CHANGE OF INDEXING ON ANY ASPECT...
 		//Get the side coordinates
 		double[][][] sideCoordinates = new double[4][][];
 		int cnt = 0;
 		//The last side has to be handled manually
-		IJ.log(String.format("PolarCorners.length %d",polarCorners.length));
+		//IJ.log(String.format("PolarCorners.length %d",polarCorners.length));
 		for (int i = 0;i<polarCorners.length-1;++i){
-			IJ.log(String.format("(int) polarCorners[i+1][2],(int) polarCorners[i][2] %d %d",(int) polarCorners[i+1][2],(int) polarCorners[i][2]));
+			//IJ.log(String.format("(int) polarCorners[i+1][2],(int) polarCorners[i][2] %d %d",(int) polarCorners[i+1][2],(int) polarCorners[i][2]));
 
 			sideCoordinates[i] = new double[(int) (Math.abs(polarCorners[i+1][2]-polarCorners[i][2])+1)][2];
 			cnt = 0;

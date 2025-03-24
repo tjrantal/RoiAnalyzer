@@ -81,7 +81,7 @@ public class ROISubregions implements PlugIn {
 		String[] settings = rSettings.getSettings();
 		rSettings.saveSettings();	//Save ROISettings settings
 		
-		int[] subDivisions = new int[]{Integer.parseInt(settings[1]),Integer.parseInt(settings[0])};	/*Get this from a menu, width wise divisions 
+		int[] subDivisions = new int[]{Integer.parseInt(settings[1]),Integer.parseInt(settings[0])};	/*Get this from a menu, width wise divisions
 (columns), height wise (rows)*/
 		//System.out.println("columns "+subDivisions[0]+" rows "+subDivisions[1]);
 		/*Check that an image was open*/
@@ -267,7 +267,8 @@ public class ROISubregions implements PlugIn {
 	//Do PixelCoordinates and SubRegions
 	private void doMask(ImagePlus imageIn,ImagePlus origIn, byte[] maskIn, int widthIn, int heightIn, int[] subDivisionsIn, String[] settingsIn){
 		/**Get the mask pixel coordinates, calculate the rotation angle for the ROI, and get the rotated coordinates*/
-		PixelCoordinates pixelCoordinates = new PixelCoordinates(maskIn,widthIn,heightIn,Integer.parseInt(settingsIn[8]));
+		boolean rectangleQuadrants = Integer.parseInt(settingsIn[13]) != 0;
+		PixelCoordinates pixelCoordinates = new PixelCoordinates(maskIn,widthIn,heightIn,Integer.parseInt(settingsIn[8]),rectangleQuadrants);
 		SubRegions subRegions = new SubRegions(imageIn,pixelCoordinates,subDivisionsIn);
 		subRegions.printResults(settingsIn,origIn);	//Print the results to a TextPanel
 		/**Get the visualization stack*/
