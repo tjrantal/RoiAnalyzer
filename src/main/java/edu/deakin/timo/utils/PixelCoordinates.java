@@ -319,12 +319,15 @@ public class PixelCoordinates{
 		//IJ.log(String.format("Top Rectangle corners"));
 		//IJ.log(String.format("index0 %d r %.1f theta %.1f index %d x %.1f y %.1f",index0,sortedCorners[index0][0],sortedCorners[index0][1],(int) sortedCorners[index0][2],coords[(int) sortedCorners[index0][2]].x,coords[(int) sortedCorners[index0][2]].y));
 		//IJ.log(String.format("index1 %d r %.1f theta %.1f index %d x %.1f y %.1f",index1,sortedCorners[index1][0],sortedCorners[index1][1],(int) sortedCorners[index1][2],coords[(int) sortedCorners[index1][2]].x,coords[(int) sortedCorners[index1][2]].y));
-
+        IJ.log("Got Into sort corners");
 		//sort the corners so that top side is 0 to 1
 		double[][] orderedCorners = new double[5][];
+        int ii = 0;
 		for (int i=index0; i<index0+sortedCorners.length;++i){
 			int ind = i % sortedCorners.length;
-			orderedCorners[i] = new double[]{sortedCorners[ind][0],sortedCorners[ind][1],sortedCorners[ind][2]};
+            IJ.log(String.format("i %d ind %d sortedCorners.length %d",i,ind,sortedCorners.length));
+			orderedCorners[ii] = new double[]{sortedCorners[ind][0],sortedCorners[ind][1],sortedCorners[ind][2]};
+            ii +=1;
 			//IJ.log(String.format("Corner %d r %.1f theta %.1f index %d x %.1f y %.1f",i,orderedCorners[i][0],orderedCorners[i][1],(int) sortedCorners[i][2],coords[(int) sortedCorners[i][2]].x,coords[(int) sortedCorners[i][2]].y));
 		}
 		orderedCorners[4] = orderedCorners[0];	//Close the loop
